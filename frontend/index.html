@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MedMuse - Daily Symptom Tracking & Medical Report Generation</title>
+    <meta name="description" content="Track your symptoms daily and generate comprehensive medical reports for healthcare providers. HIPAA-compliant health tracking made simple." />
+    <meta name="author" content="MedMuse" />
+    <meta name="keywords" content="symptom tracking, medical reports, health tracking, healthcare, HIPAA compliant, daily logging" />
+    
+    <!-- Medical App Specific -->
+    <meta name="theme-color" content="#0066CC" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="MedMuse" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:title" content="MedMuse - Daily Symptom Tracking & Medical Reports" />
+    <meta property="og:description" content="Track your symptoms daily and generate comprehensive medical reports for healthcare providers. HIPAA-compliant health tracking made simple." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://medmuse.app" />
+    <meta property="og:image" content="https://medmuse.app/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="MedMuse - Daily Symptom Tracking & Medical Reports" />
+    <meta name="twitter:description" content="Track your symptoms daily and generate comprehensive medical reports for healthcare providers." />
+    <meta name="twitter:image" content="https://medmuse.app/twitter-image.jpg" />
+    
+    <!-- Structured Data for Medical App -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "MedicalWebPage",
+      "name": "MedMuse",
+      "description": "Daily symptom tracking and medical report generation platform",
+      "url": "https://medmuse.app",
+      "mainEntity": {
+        "@type": "WebApplication",
+        "name": "MedMuse",
+        "applicationCategory": "HealthApplication",
+        "operatingSystem": "Web Browser",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+    }
+    </script>
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

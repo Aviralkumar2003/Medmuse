@@ -1,0 +1,113 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+Pro:wght@400;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* MedMuse Design System - Healthcare focused design with accessibility */
+
+@layer base {
+  :root {
+    /* Primary Medical Blues */
+    --primary: 217 86% 40%;        /* #0066CC - Medical blue main */
+    --primary-dark: 217 100% 30%;  /* #004499 - Medical blue dark */
+    --primary-light: 217 100% 60%; /* #3399FF - Medical blue light */
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary Healing Greens */
+    --secondary: 154 100% 33%;     /* #00A86B - Healing green main */
+    --secondary-dark: 154 100% 24%; /* #007B4F - Healing green dark */
+    --secondary-light: 154 60% 63%; /* #66D9A0 - Healing green light */
+    --secondary-foreground: 0 0% 100%;
+
+    /* Accent Colors for Health States */
+    --warning: 0 79% 67%;          /* #FF6B6B - Warning orange */
+    --attention: 51 100% 50%;      /* #FFD700 - Attention gold */
+    --warning-foreground: 0 0% 100%;
+    --attention-foreground: 0 0% 0%;
+
+    /* Medical Neutrals */
+    --background: 0 0% 100%;       /* #FFFFFF - Pure white */
+    --background-soft: 220 33% 98%; /* #F5F7FA - Soft background */
+    --background-blue: 217 28% 94%; /* #EDF1F7 - Blue tinted background */
+    --foreground: 211 25% 26%;     /* #343A40 - Dark neutral */
+
+    /* Interface Elements */
+    --card: 0 0% 100%;
+    --card-foreground: 211 25% 26%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 211 25% 26%;
+
+    /* Muted Elements */
+    --muted: 210 17% 92%;          /* #E9ECEF - Mid light neutral */
+    --muted-foreground: 210 11% 42%; /* #6C757D - Mid neutral */
+
+    /* Accent States */
+    --accent: 217 28% 94%;         /* #EDF1F7 - Blue background */
+    --accent-foreground: 217 86% 40%;
+
+    /* Destructive (kept medical appropriate) */
+    --destructive: 0 79% 67%;      /* #FF6B6B - Medical warning */
+    --destructive-foreground: 0 0% 100%;
+
+    /* Interactive Elements */
+    --border: 210 17% 92%;         /* #E9ECEF - Subtle borders */
+    --input: 210 17% 92%;
+    --ring: 217 86% 40%;           /* Focus ring matches primary */
+
+    /* Layout */
+    --radius: 0.75rem;             /* 12px - Medical card radius */
+
+    /* Medical Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-light)));
+    --gradient-healing: linear-gradient(135deg, hsl(var(--secondary)), hsl(var(--secondary-light)));
+    --gradient-soft: linear-gradient(180deg, hsl(var(--background-soft)), hsl(var(--background)));
+
+    /* Medical Shadows */
+    --shadow-card: 0 2px 8px hsl(var(--primary) / 0.08);
+    --shadow-dialog: 0 8px 32px hsl(var(--primary) / 0.12);
+    --shadow-button: 0 2px 4px hsl(var(--primary) / 0.1);
+
+    /* Animation Timings */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .dark {
+    /* Dark mode optimized for medical readability */
+    --background: 211 25% 8%;      /* Dark but readable */
+    --background-soft: 211 25% 12%;
+    --background-blue: 217 25% 15%;
+    --foreground: 210 17% 92%;
+
+    --card: 211 25% 12%;
+    --card-foreground: 210 17% 92%;
+    --popover: 211 25% 12%;
+    --popover-foreground: 210 17% 92%;
+
+    --primary: 217 100% 70%;       /* Brighter blue for dark mode */
+    --primary-foreground: 211 25% 8%;
+
+    --secondary: 154 60% 55%;      /* Adjusted green for dark mode */
+    --secondary-foreground: 211 25% 8%;
+
+    --muted: 211 25% 20%;
+    --muted-foreground: 210 11% 65%;
+
+    --accent: 211 25% 20%;
+    --accent-foreground: 217 100% 70%;
+
+    --border: 211 25% 20%;
+    --input: 211 25% 20%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
