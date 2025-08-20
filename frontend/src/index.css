@@ -1,81 +1,141 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+Pro:wght@400;600&display=swap');
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-/* MedMuse Design System - Healthcare focused design with accessibility */
+/* Define your full design system using Tailwind v4's @theme */
+@theme {
+  --font-sans: Inter, system-ui, sans-serif;
+  --font-serif: "Source Serif Pro", serif;
+  --font-ui: Inter, system-ui, sans-serif;
+  --font-body: "Source Serif Pro", serif;
 
+  /* Container */
+  --container-padding: 2rem;
+  --container-2xl: 1400px;
+
+  /* Radii */
+  --radius-lg: 0.75rem; /* 12px */
+  --radius-md: calc(var(--radius-lg) - 2px);
+  --radius-sm: calc(var(--radius-lg) - 4px);
+  --radius-medical: var(--radius-lg);
+
+  /* Spacing */
+  --spacing-18: 4.5rem;
+  --spacing-88: 22rem;
+
+  /* Box Shadows */
+  --shadow-card: 0 2px 8px hsl(var(--primary) / 0.08);
+  --shadow-dialog: 0 8px 32px hsl(var(--primary) / 0.12);
+  --shadow-button: 0 2px 4px hsl(var(--primary) / 0.1);
+
+  /* Background Images (Gradients) */
+  --background-image-gradient-primary: var(--gradient-primary);
+  --background-image-gradient-healing: var(--gradient-healing);
+  --background-image-gradient-soft: var(--gradient-soft);
+
+  /* Transition */
+  --transition-medical: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Animations */
+  @keyframes accordion-down {
+    from { height: 0; opacity: 0 }
+    to { height: var(--radix-accordion-content-height); opacity: 1 }
+  }
+  @keyframes accordion-up {
+    from { height: var(--radix-accordion-content-height); opacity: 1 }
+    to { height: 0; opacity: 0 }
+  }
+  @keyframes fade-in {
+    0% { opacity: 0; transform: translateY(10px) }
+    100% { opacity: 1; transform: translateY(0) }
+  }
+  @keyframes scale-in {
+    0% { transform: scale(0.95); opacity: 0 }
+    100% { transform: scale(1); opacity: 1 }
+  }
+  @keyframes slide-up {
+    0% { transform: translateY(20px); opacity: 0 }
+    100% { transform: translateY(0); opacity: 1 }
+  }
+  @keyframes pulse-health {
+    0%, 100% { opacity: 1 }
+    50% { opacity: 0.7 }
+  }
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-fade-in: fade-in 0.3s ease-out;
+  --animate-scale-in: scale-in 0.2s ease-out;
+  --animate-slide-up: slide-up 0.4s ease-out;
+  --animate-pulse-health: pulse-health 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+  /* ✅ Custom colors mapped for Tailwind utilities */
+  --color-border: hsl(var(--border));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-primary: hsl(var(--primary));
+  --color-secondary: hsl(var(--secondary));
+}
+
+/* Base Design Tokens */
 @layer base {
   :root {
     /* Primary Medical Blues */
-    --primary: 217 86% 40%;        /* #0066CC - Medical blue main */
-    --primary-dark: 217 100% 30%;  /* #004499 - Medical blue dark */
-    --primary-light: 217 100% 60%; /* #3399FF - Medical blue light */
+    --primary: 217 86% 40%;
+    --primary-dark: 217 100% 30%;
+    --primary-light: 217 100% 60%;
     --primary-foreground: 0 0% 100%;
 
     /* Secondary Healing Greens */
-    --secondary: 154 100% 33%;     /* #00A86B - Healing green main */
-    --secondary-dark: 154 100% 24%; /* #007B4F - Healing green dark */
-    --secondary-light: 154 60% 63%; /* #66D9A0 - Healing green light */
+    --secondary: 154 100% 33%;
+    --secondary-dark: 154 100% 24%;
+    --secondary-light: 154 60% 63%;
     --secondary-foreground: 0 0% 100%;
 
-    /* Accent Colors for Health States */
-    --warning: 0 79% 67%;          /* #FF6B6B - Warning orange */
-    --attention: 51 100% 50%;      /* #FFD700 - Attention gold */
+    /* Accent Colors */
+    --warning: 0 79% 67%;
+    --attention: 51 100% 50%;
     --warning-foreground: 0 0% 100%;
     --attention-foreground: 0 0% 0%;
 
-    /* Medical Neutrals */
-    --background: 0 0% 100%;       /* #FFFFFF - Pure white */
-    --background-soft: 220 33% 98%; /* #F5F7FA - Soft background */
-    --background-blue: 217 28% 94%; /* #EDF1F7 - Blue tinted background */
-    --foreground: 211 25% 26%;     /* #343A40 - Dark neutral */
+    /* Neutrals */
+    --background: 0 0% 100%;
+    --background-soft: 220 33% 98%;
+    --background-blue: 217 28% 94%;
+    --foreground: 211 25% 26%;
 
-    /* Interface Elements */
+    /* UI Surfaces */
     --card: 0 0% 100%;
     --card-foreground: 211 25% 26%;
     --popover: 0 0% 100%;
     --popover-foreground: 211 25% 26%;
 
-    /* Muted Elements */
-    --muted: 210 17% 92%;          /* #E9ECEF - Mid light neutral */
-    --muted-foreground: 210 11% 42%; /* #6C757D - Mid neutral */
+    /* Muted */
+    --muted: 210 17% 92%;
+    --muted-foreground: 210 11% 42%;
 
-    /* Accent States */
-    --accent: 217 28% 94%;         /* #EDF1F7 - Blue background */
+    /* Accent */
+    --accent: 217 28% 94%;
     --accent-foreground: 217 86% 40%;
 
-    /* Destructive (kept medical appropriate) */
-    --destructive: 0 79% 67%;      /* #FF6B6B - Medical warning */
+    /* Destructive */
+    --destructive: 0 79% 67%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Interactive Elements */
-    --border: 210 17% 92%;         /* #E9ECEF - Subtle borders */
+    /* Interactive */
+    --border: 210 17% 92%;
     --input: 210 17% 92%;
-    --ring: 217 86% 40%;           /* Focus ring matches primary */
+    --ring: 217 86% 40%;
 
-    /* Layout */
-    --radius: 0.75rem;             /* 12px - Medical card radius */
-
-    /* Medical Gradients */
+    /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-light)));
     --gradient-healing: linear-gradient(135deg, hsl(var(--secondary)), hsl(var(--secondary-light)));
     --gradient-soft: linear-gradient(180deg, hsl(var(--background-soft)), hsl(var(--background)));
-
-    /* Medical Shadows */
-    --shadow-card: 0 2px 8px hsl(var(--primary) / 0.08);
-    --shadow-dialog: 0 8px 32px hsl(var(--primary) / 0.12);
-    --shadow-button: 0 2px 4px hsl(var(--primary) / 0.1);
-
-    /* Animation Timings */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .dark {
-    /* Dark mode optimized for medical readability */
-    --background: 211 25% 8%;      /* Dark but readable */
+    --background: 211 25% 8%;
     --background-soft: 211 25% 12%;
     --background-blue: 217 25% 15%;
     --foreground: 210 17% 92%;
@@ -85,10 +145,10 @@
     --popover: 211 25% 12%;
     --popover-foreground: 210 17% 92%;
 
-    --primary: 217 100% 70%;       /* Brighter blue for dark mode */
+    --primary: 217 100% 70%;
     --primary-foreground: 211 25% 8%;
 
-    --secondary: 154 60% 55%;      /* Adjusted green for dark mode */
+    --secondary: 154 60% 55%;
     --secondary-foreground: 211 25% 8%;
 
     --muted: 211 25% 20%;
@@ -102,6 +162,7 @@
   }
 }
 
+/* Global resets */
 @layer base {
   * {
     @apply border-border;
@@ -109,5 +170,6 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-body);
   }
 }
