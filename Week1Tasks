@@ -1,0 +1,30 @@
+UI issues (Easy)(Anushka)
+1) Coloured buttons and cards text not readable (Landing Page)(CSS change)
+2) Login Page (Google button not coloured) (Login page)(Use google svg)
+8) Button UI error in action card. (Report tab)(CSS)
+11) Error and success dialogs not UI friendly.(CSS)
+15) Profile button clicking issues. (Redundant -> Do not solve this)
+16) Profile button should be triggered on hover instead of click.(CSS)
+18) No hover effect.(CSS)
+
+Functionality issue (Medium-Hard)(Aviral)
+4) No option to add severity and additional notes to each symptom (Log Symptoms)
+5) No option to add symptoms out of available symptom list
+7) Symptom filter function not working
+10) Report summary not updating on selecting symptoms.
+
+Working issues (Easy-Medium)(Deep)
+3) Better date and time entering options and should not be able to select future time (Log Symptoms)
+6) Issue in adding symptom again, after logging once - Available symptom data not loading. (Log Symptoms)
+9) Button onClick of both custom report generation and generate weekly report loads even when one of the button is clicked.
+12) Symptom history summary issues.
+13) Pdf not downloading
+14) Previous reports visibility issue
+17) Logout not working.
+
+Testing and documenting all api's (Lalit)
+1) Hit all the get, post, put, delete api's on postman
+2) Populate symptomentry and user database mock data in datainitializer file after understanding the relationships between entities.
+2) Resolve issues if occur
+3) Try not to change any body parameters
+4) Document all the request body of post api's
