@@ -159,6 +159,11 @@
 
     --border: 211 25% 20%;
     --input: 211 25% 20%;
+    --ring: 217 100% 70%;
+
+    /* Ensure destructive colors work in dark mode */
+    --destructive: 0 79% 67%;
+    --destructive-foreground: 211 25% 8%;
   }
 }
 
