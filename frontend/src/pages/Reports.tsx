@@ -43,7 +43,9 @@ export default function Reports() {
 
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [reportFormat, setReportFormat] = useState("pdf");
-  const [isGenerating, setIsGenerating] = useState(false);
+  // const [isGenerating, setIsGenerating] = useState(false); //old
+  const [isGeneratingWeekly, setIsGeneratingWeekly] = useState(false); //  added
+  const [isGeneratingCustom, setIsGeneratingCustom] = useState(false); //  added
 
   // Calendar popup visibility state
   const [showStartCalendar, setShowStartCalendar] = useState(false);
@@ -141,7 +143,8 @@ export default function Reports() {
   };
 
   const generateReport = async () => {
-    setIsGenerating(true);
+    // setIsGenerating(true); //old
+    setIsGeneratingCustom(true); //  only affect custom button
     try {
       await dispatch(
         generateCustomReport({
@@ -156,12 +159,14 @@ export default function Reports() {
       dispatch(getUserReports());
     } catch {
     } finally {
-      setIsGenerating(false);
+      // setIsGenerating(false); //old
+      setIsGeneratingCustom(false); // only reset custom
     }
   };
 
   const generateWeeklyReportHandler = async () => {
-    setIsGenerating(true);
+    // setIsGenerating(true); //old
+    setIsGeneratingWeekly(true); //  only affect weekly button
     try {
       await dispatch(generateWeeklyReport()).unwrap();
       toast({
@@ -171,7 +176,8 @@ export default function Reports() {
       dispatch(getUserReports());
     } catch {
     } finally {
-      setIsGenerating(false);
+      // setIsGenerating(false); //old
+      setIsGeneratingWeekly(false); // only reset weekly
     }
   };
 
@@ -512,26 +518,29 @@ export default function Reports() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
+                  {/*  Weekly Report Button */}
                   <Button
                     variant="medical"
                     className="w-full justify-start"
                     onClick={generateWeeklyReportHandler}
-                    disabled={isGenerating}
+                    disabled={isGeneratingWeekly} //changed
                   >
-                    {isGenerating ? (
+                    {isGeneratingWeekly ? ( // changed
                       <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
                     ) : (
                       <FileText className="h-4 w-4 mr-2" />
                     )}
                     Generate Weekly Report
                   </Button>
+
+                  {/*  Custom Report Button */}
                   <Button
                     variant="outline"
                     className="w-full justify-start"
                     onClick={generateReport}
-                    disabled={isGenerating}
+                    disabled={isGeneratingCustom} //  changed
                   >
-                    {isGenerating ? (
+                    {isGeneratingCustom ? ( //  changed
                       <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
                     ) : (
                       <Download className="h-4 w-4 mr-2" />
