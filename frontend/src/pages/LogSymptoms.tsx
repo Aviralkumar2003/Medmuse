@@ -4,8 +4,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Slider } from "@/components/ui/slider"
 import { Header } from "@/components/layout/Header"
 import { useToast } from "@/hooks/use-toast"
 import { useAppDispatch, useAppSelector } from "@/hooks/redux"
@@ -13,13 +11,21 @@ import { getAllSymptoms, searchSymptoms, clearSearchResults } from "@/store/slic
 import { createSymptomEntries, clearError } from "@/store/slices/symptomEntrySlice"
 import { 
   Plus, 
-  X, 
   Save, 
   Calendar,
   Clock,
+  Search,
+  TrendingUp,
+  Activity,
+  MessageSquare,
+  CheckCircle,
   AlertTriangle
 } from "lucide-react"
 import { Link } from "react-router-dom"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { QuickLogging } from "@/components/ui/quick-logging"
+import { DetailedLogging } from "@/components/ui/detailed-logging"
+import { SymptomList, UnifiedSymptom } from "@/components/ui/symptom-list"
 
 export default function LogSymptoms() {
   const dispatch = useAppDispatch()
@@ -29,12 +35,11 @@ export default function LogSymptoms() {
   const { symptoms: availableSymptoms, isLoading: symptomsLoading } = useAppSelector((state) => state.symptoms)
   const { isCreating: entryLoading, error } = useAppSelector((state) => state.symptomEntries)
   
-  const [selectedSymptoms, setSelectedSymptoms] = useState<{id: number, name: string}[]>([])
-  const [newSymptom, setNewSymptom] = useState("")
-  const [severity, setSeverity] = useState([5])
-  const [notes, setNotes] = useState("")
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [time, setTime] = useState(new Date().toTimeString().slice(0, 5))
+  const [symptoms, setSymptoms] = useState<UnifiedSymptom[]>([])
+  const [selectedSymptomId, setSelectedSymptomId] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState("quick")
 
   useEffect(() => {
     dispatch(getAllSymptoms())
@@ -54,41 +59,54 @@ export default function LogSymptoms() {
     }
   }, [error, toast, dispatch])
 
-  const addSymptomByName = (symptomName: string) => {
-    if (symptomName && !selectedSymptoms.some(s => s.name === symptomName)) {
-      // Find the symptom in available symptoms or create a new one
-      const foundSymptom = availableSymptoms.find(s => s.name.toLowerCase() === symptomName.toLowerCase())
-      if (foundSymptom) {
-        setSelectedSymptoms([...selectedSymptoms, { id: foundSymptom.id, name: foundSymptom.name }])
-      }
-      setNewSymptom("")
+
+
+  // Unified symptom management functions
+  const handleSymptomAdd = (symptom: UnifiedSymptom) => {
+    setSymptoms(prev => [...prev, symptom])
+  }
+
+  const handleSymptomUpdate = (updatedSymptom: UnifiedSymptom) => {
+    setSymptoms(prev => prev.map(s => s.id === updatedSymptom.id ? updatedSymptom : s))
+  }
+
+  const handleSymptomRemove = (symptomId: string) => {
+    setSymptoms(prev => prev.filter(s => s.id !== symptomId))
+    if (selectedSymptomId === symptomId) {
+      setSelectedSymptomId(null)
     }
   }
 
-  const addSymptom = (symptom: {id: number, name: string}) => {
-    if (!selectedSymptoms.some(s => s.id === symptom.id)) {
-      setSelectedSymptoms([...selectedSymptoms, symptom])
-    }
+  const handleSymptomClick = (symptom: UnifiedSymptom) => {
+    setSelectedSymptomId(symptom.id)
+    // Switch to the appropriate tab
+    setActiveTab(symptom.loggingType)
   }
 
-  const removeSymptom = (symptomId: number) => {
-    setSelectedSymptoms(selectedSymptoms.filter(s => s.id !== symptomId))
+  const handleConvertSymptom = (symptom: UnifiedSymptom, newType: 'quick' | 'detailed') => {
+    const updatedSymptom = { ...symptom, loggingType: newType }
+    handleSymptomUpdate(updatedSymptom)
+    setActiveTab(newType)
+    toast({
+      title: `Converted to ${newType === 'quick' ? 'Quick' : 'Detailed'} Mode`,
+      description: `${symptom.name} has been converted to ${newType} logging mode.`,
+    })
   }
 
-  const handleSave = async () => {
-    if (selectedSymptoms.length === 0) {
+  const handleSaveAll = async () => {
+    if (symptoms.length === 0) {
       toast({
-        title: "No symptoms selected",
-        description: "Please select at least one symptom",
+        title: "No Symptoms",
+        description: "Please add at least one symptom before saving.",
         variant: "destructive",
       })
       return
     }
 
-    const entries = selectedSymptoms.map(symptom => ({
-      symptomId: symptom.id,
-      severity: severity[0],
-      notes,
+    const entries = symptoms.map(symptom => ({
+      symptomId: parseInt(symptom.id),
+      severity: symptom.severity,
+      notes: symptom.notes,
       entryDate: date
     }))
 
@@ -96,7 +114,7 @@ export default function LogSymptoms() {
       await dispatch(createSymptomEntries({ entries })).unwrap()
       toast({
         title: "Success",
-        description: "Symptoms logged successfully!",
+        description: `${symptoms.length} symptom${symptoms.length !== 1 ? 's' : ''} logged successfully!`,
       })
       navigate('/dashboard')
     } catch (error) {
@@ -104,24 +122,12 @@ export default function LogSymptoms() {
     }
   }
 
-  const getSeverityColor = (value: number) => {
-    if (value <= 3) return "text-secondary"
-    if (value <= 6) return "text-attention"
-    return "text-warning"
-  }
-
-  const getSeverityLabel = (value: number) => {
-    if (value <= 3) return "Mild"
-    if (value <= 6) return "Moderate"
-    return "Severe"
-  }
-
   return (
     <div className="min-h-screen bg-background-soft">
       <Header />
       
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-ui font-bold text-foreground mb-2">
@@ -132,15 +138,12 @@ export default function LogSymptoms() {
             </p>
           </div>
 
-          <Card className="shadow-card border-border">
+          {/* Date and Time */}
+          <Card className="shadow-card border-border mb-6">
             <CardHeader>
-              <CardTitle className="font-ui text-foreground">Today's Entry</CardTitle>
-              <CardDescription className="font-body">
-                Fill out the details below to log your current symptoms
-              </CardDescription>
+              <CardTitle className="font-ui text-foreground text-lg">Entry Details</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Date and Time */}
+            <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="date" className="font-ui">Date</Label>
@@ -169,158 +172,95 @@ export default function LogSymptoms() {
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
-              {/* Symptoms Selection */}
-              <div className="space-y-4">
-                <Label className="font-ui">Symptoms</Label>
-                
-                {/* Selected Symptoms */}
-                {selectedSymptoms.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {selectedSymptoms.map((symptom) => (
-                      <div
-                        key={symptom.id}
-                        className="flex items-center bg-accent text-accent-foreground px-3 py-1 rounded-medical text-sm font-ui"
-                      >
-                        {symptom.name}
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="xs"
-                          className="ml-2 h-4 w-4 p-0"
-                          onClick={() => removeSymptom(symptom.id)}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+          {/* Symptom List */}
+          <SymptomList
+            symptoms={symptoms}
+            onSymptomClick={handleSymptomClick}
+            onRemoveSymptom={handleSymptomRemove}
+            onConvertSymptom={handleConvertSymptom}
+            selectedSymptomId={selectedSymptomId}
+          />
 
-                {/* Add Custom Symptom */}
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Type a symptom..."
-                    value={newSymptom}
-                    onChange={(e) => setNewSymptom(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && addSymptomByName(newSymptom)}
-                    className="font-body"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => addSymptomByName(newSymptom)}
-                    disabled={!newSymptom.trim()}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
+          {/* Tabbed Interface */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="quick" className="flex items-center gap-2 data-[state=active]:border-2 data-[state=active]:border-primary">
+                <Clock className="h-4 w-4" />
+                Quick Logging
+              </TabsTrigger>
+              <TabsTrigger value="detailed" className="flex items-center gap-2 data-[state=active]:border-2 data-[state=active]:border-primary">
+                <Activity className="h-4 w-4" />
+                Detailed Logging
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="quick" className="space-y-6">
+              <QuickLogging
+                availableSymptoms={availableSymptoms}
+                onSymptomUpdate={handleSymptomUpdate}
+                onSymptomAdd={handleSymptomAdd}
+                onSymptomRemove={handleSymptomRemove}
+                selectedSymptom={symptoms.find(s => s.id === selectedSymptomId)}
+                symptoms={symptoms}
+                isLoading={entryLoading}
+                date={date}
+              />
+            </TabsContent>
+
+            <TabsContent value="detailed" className="space-y-6">
+              <DetailedLogging
+                availableSymptoms={availableSymptoms}
+                onSymptomUpdate={handleSymptomUpdate}
+                onSymptomAdd={handleSymptomAdd}
+                onSymptomRemove={handleSymptomRemove}
+                selectedSymptom={symptoms.find(s => s.id === selectedSymptomId)}
+                symptoms={symptoms}
+                isLoading={entryLoading}
+                date={date}
+              />
+            </TabsContent>
+          </Tabs>
+
+          {/* Common Save Button */}
+          {symptoms.length > 0 && (
+            <div className="flex justify-center mt-6">
+              <Button
+                onClick={handleSaveAll}
+                disabled={entryLoading}
+                size="lg"
+                className="px-8"
+              >
+                {entryLoading ? (
+                  <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                ) : null}
+                {entryLoading ? 'Saving...' : `Save All ${symptoms.length} Symptom${symptoms.length !== 1 ? 's' : ''}`}
+              </Button>
+            </div>
+          )}
+
+          {/* Quick Tips */}
+          <Card className="shadow-card border-border mt-6">
+            <CardHeader>
+              <CardTitle className="font-ui text-foreground text-lg">Quick Tips</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="h-3 w-3 text-blue-500" />
+                  <span>Be specific about location and timing</span>
                 </div>
-
-                {/* Available Symptoms */}
-                <div>
-                  <Label className="text-sm font-ui text-muted-foreground mb-2 block">
-                    Or select from available symptoms:
-                  </Label>
-                  {symptomsLoading ? (
-                    <div className="text-center py-4">
-                      <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {availableSymptoms.slice(0, 12).map((symptom) => (
-                        <Button
-                          key={symptom.id}
-                          type="button"
-                          variant="soft"
-                          size="sm"
-                          onClick={() => addSymptom(symptom)}
-                          disabled={selectedSymptoms.some(s => s.id === symptom.id)}
-                          className="justify-start text-left"
-                        >
-                          {symptom.name}
-                        </Button>
-                      ))}
-                    </div>
-                  )}
+                <div className="flex items-center gap-2">
+                  <Activity className="h-3 w-3 text-green-500" />
+                  <span>Note what makes it better or worse</span>
                 </div>
-              </div>
-
-              {/* Severity Rating */}
-              <div className="space-y-4">
-                <Label className="font-ui">Severity Level</Label>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-body text-muted-foreground">Mild</span>
-                    <span className="text-sm font-body text-muted-foreground">Severe</span>
-                  </div>
-                  <Slider
-                    value={severity}
-                    onValueChange={setSeverity}
-                    max={10}
-                    min={1}
-                    step={1}
-                    className="w-full"
-                  />
-                  <div className="text-center">
-                    <span className={`text-2xl font-ui font-bold ${getSeverityColor(severity[0])}`}>
-                      {severity[0]}/10
-                    </span>
-                    <span className={`ml-2 text-sm font-ui ${getSeverityColor(severity[0])}`}>
-                      ({getSeverityLabel(severity[0])})
-                    </span>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-3 w-3 text-orange-500" />
+                  <span>Log symptoms as soon as you notice them</span>
                 </div>
               </div>
-
-
-              {/* Notes */}
-              <div className="space-y-2">
-                <Label htmlFor="notes" className="font-ui">Additional Notes</Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Any additional details about your symptoms, triggers, or context..."
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={4}
-                  className="font-body"
-                />
-              </div>
-
-              {/* Actions */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                <Button
-                  variant="medical"
-                  size="lg"
-                  onClick={handleSave}
-                  disabled={selectedSymptoms.length === 0 || entryLoading}
-                  className="flex-1"
-                >
-                  {entryLoading ? (
-                    <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                  ) : (
-                    <Save className="h-5 w-5 mr-2" />
-                  )}
-                  {entryLoading ? 'Saving...' : 'Save Entry'}
-                </Button>
-                <Button variant="outline" size="lg" asChild>
-                  <Link to="/dashboard">Cancel</Link>
-                </Button>
-              </div>
-
-              {/* Warning for severe symptoms */}
-              {severity[0] >= 8 && (
-                <div className="bg-warning/10 border border-warning/20 rounded-medical p-4 flex items-start gap-3">
-                  <AlertTriangle className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-ui font-medium text-foreground mb-1">
-                      Severe symptoms detected
-                    </p>
-                    <p className="text-sm font-body text-muted-foreground">
-                      If you're experiencing severe symptoms, consider contacting your healthcare provider or seeking immediate medical attention.
-                    </p>
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
         </div>
