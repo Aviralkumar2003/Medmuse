@@ -75,21 +75,7 @@
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
   --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
   --color-secondary: hsl(var(--secondary));
-  --color-secondary-foreground: hsl(var(--secondary-foreground));
-  --color-muted: hsl(var(--muted));
-  --color-muted-foreground: hsl(var(--muted-foreground));
-  --color-accent: hsl(var(--accent));
-  --color-accent-foreground: hsl(var(--accent-foreground));
-  --color-destructive: hsl(var(--destructive));
-  --color-destructive-foreground: hsl(var(--destructive-foreground));
-  --color-card: hsl(var(--card));
-  --color-card-foreground: hsl(var(--card-foreground));
-  --color-popover: hsl(var(--popover));
-  --color-popover-foreground: hsl(var(--popover-foreground));
-  --color-input: hsl(var(--input));
-  --color-ring: hsl(var(--ring));
 }
 
 /* Base Design Tokens */
@@ -148,7 +134,7 @@
     --gradient-soft: linear-gradient(180deg, hsl(var(--background-soft)), hsl(var(--background)));
   }
 
-   .dark {
+  .dark {
     --background: 211 25% 8%;
     --background-soft: 211 25% 12%;
     --background-blue: 217 25% 15%;
@@ -160,8 +146,7 @@
     --popover-foreground: 210 17% 92%;
 
     --primary: 217 100% 70%;
-    /* --primary-foreground: 211 25% 8%;  */
-    --primary-foreground: 0 0% 100%;
+    --primary-foreground: 211 25% 8%;
 
     --secondary: 154 60% 55%;
     --secondary-foreground: 211 25% 8%;
@@ -176,11 +161,10 @@
     --input: 211 25% 20%;
     --ring: 217 100% 70%;
 
-    
+    /* Ensure destructive colors work in dark mode */
     --destructive: 0 79% 67%;
     --destructive-foreground: 211 25% 8%;
-  } 
-
+  }
 }
 
 /* Global resets */
@@ -194,15 +178,3 @@
     font-family: var(--font-body);
   }
 }
-
-/* Ensure button text colors are properly applied */
-@layer components {
-  .text-primary-foreground {
-    color: hsl(var(--primary-foreground));
-  }
-  
-  .text-secondary-foreground {
-    color: hsl(var(--secondary-foreground));
-  }
-}
-
