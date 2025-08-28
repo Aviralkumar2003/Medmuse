@@ -1,6 +1,6 @@
 UI issues (Easy)(Anushka)
-1) Coloured buttons and cards text not readable (Landing Page)(CSS change)
-2) Login Page (Google button not coloured) (Login page)(Use google svg)
+1) Coloured buttons and cards text not readable (Landing Page)(CSS change) 
+2) Login Page (Google button not coloured) (Login page)(Use google svg)  
 8) Button UI error in action card. (Report tab)(CSS)
 11) Error and success dialogs not UI friendly.(CSS)
 15) Profile button clicking issues. (Redundant -> Do not solve this)
