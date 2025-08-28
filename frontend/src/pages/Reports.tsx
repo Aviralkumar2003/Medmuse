@@ -22,10 +22,13 @@ import { getAllSymptoms } from "@/store/slices/symptomSlice";
 import { useToast } from "@/hooks/use-toast";
 import { Download, FileText, Calendar as CalendarIcon } from "lucide-react";
 import Calendar from "@/components/ui/calendar";
+import html2canvas from "html2canvas"; //added
+import { jsPDF } from "jspdf"; //added
 
 export default function Reports() {
   const dispatch = useAppDispatch();
   const { toast } = useToast();
+  const reportRef = useRef<HTMLDivElement | null>(null); //added for pdf
 
   const {
     reports,
@@ -43,9 +46,9 @@ export default function Reports() {
 
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [reportFormat, setReportFormat] = useState("pdf");
-  // const [isGenerating, setIsGenerating] = useState(false); //old
-  const [isGeneratingWeekly, setIsGeneratingWeekly] = useState(false); //  added
-  const [isGeneratingCustom, setIsGeneratingCustom] = useState(false); //  added
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false); //old //new change
+  // const [isGeneratingWeekly, setIsGeneratingWeekly] = useState(false); //  added //old
+  // const [isGeneratingCustom, setIsGeneratingCustom] = useState(false); //  added //old
 
   // Calendar popup visibility state
   const [showStartCalendar, setShowStartCalendar] = useState(false);
@@ -143,8 +146,8 @@ export default function Reports() {
   };
 
   const generateReport = async () => {
-    // setIsGenerating(true); //old
-    setIsGeneratingCustom(true); //  only affect custom button
+    setIsGeneratingReport(true); //old //new change
+    // setIsGeneratingCustom(true); //  only affect custom button //old
     try {
       await dispatch(
         generateCustomReport({
@@ -159,27 +162,45 @@ export default function Reports() {
       dispatch(getUserReports());
     } catch {
     } finally {
-      // setIsGenerating(false); //old
-      setIsGeneratingCustom(false); // only reset custom
+      setIsGeneratingReport(false); //old //new change
+      // setIsGeneratingCustom(false); // only reset custom //old
     }
   };
 
-  const generateWeeklyReportHandler = async () => {
-    // setIsGenerating(true); //old
-    setIsGeneratingWeekly(true); //  only affect weekly button
-    try {
-      await dispatch(generateWeeklyReport()).unwrap();
-      toast({
-        title: "Weekly Report Generated",
-        description: "Your weekly health report has been generated!",
-      });
-      dispatch(getUserReports());
-    } catch {
-    } finally {
-      // setIsGenerating(false); //old
-      setIsGeneratingWeekly(false); // only reset weekly
-    }
+  //added exporting pdf function
+  const handleDownloadPdf = async () => {
+    if (!reportRef.current) return;
+
+    const element = reportRef.current;
+    const canvas = await html2canvas(element);
+    const data = canvas.toDataURL("image/png");
+
+    const pdf = new jsPDF();
+    const imgProperties = pdf.getImageProperties(data);
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (imgProperties.height * pdfWidth) / imgProperties.width;
+
+    pdf.addImage(data, "PNG", 0, 0, pdfWidth, pdfHeight);
+    pdf.save("report-preview.pdf");
   };
+
+  //REMOVED SECTION
+  // const generateWeeklyReportHandler = async () => {
+  //   // setIsGenerating(true); //old
+  //   setIsGeneratingWeekly(true); //  only affect weekly button
+  //   try {
+  //     await dispatch(generateWeeklyReport()).unwrap();
+  //     toast({
+  //       title: "Weekly Report Generated",
+  //       description: "Your weekly health report has been generated!",
+  //     });
+  //     dispatch(getUserReports());
+  //   } catch {
+  //   } finally {
+  //     // setIsGenerating(false); //old
+  //     setIsGeneratingWeekly(false); // only reset weekly
+  //   }
+  // };
 
   const downloadReport = async (reportId: number) => {
     try {
@@ -511,29 +532,43 @@ export default function Reports() {
               </Card>
 
               {/* Actions */}
-              <Card className="shadow-card border-border">
+              {/* ✅ Changed: Only ONE Generate Report button */}
+              <Card className="shadow-card border-border" ref={reportRef}>
                 <CardHeader>
                   <CardTitle className="font-ui text-foreground">
                     Actions
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {/*  Weekly Report Button */}
+
+                  {/* Generate Weekly report button */}
                   <Button
                     variant="medical"
                     className="w-full justify-start"
-                    onClick={generateWeeklyReportHandler}
-                    disabled={isGeneratingWeekly} //changed
+                    onClick={generateReport}
+                    disabled={isGeneratingReport}
                   >
-                    {isGeneratingWeekly ? ( // changed
+                    {isGeneratingReport ? (
                       <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
                     ) : (
-                      <FileText className="h-4 w-4 mr-2" />
+                      <Download className="h-4 w-4 mr-2" />
                     )}
-                    Generate Weekly Report
+                    Generate Report
                   </Button>
 
-                  {/*  Custom Report Button */}
+                  {/* Download PDF button */}
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={handleDownloadPdf}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download as PDF
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Custom Report Button
                   <Button
                     variant="outline"
                     className="w-full justify-start"
@@ -548,7 +583,7 @@ export default function Reports() {
                     Generate Custom Report
                   </Button>
                 </CardContent>
-              </Card>
+              </Card> */}
 
               {/* Previous Reports */}
               <Card className="shadow-card border-border">
