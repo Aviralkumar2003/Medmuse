@@ -1,47 +1,72 @@
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Header } from "@/components/layout/Header"
-import { useAppDispatch, useAppSelector } from "@/hooks/redux"
-import { generateWeeklyReport, generateCustomReport, getUserReports, downloadReportPdf, clearError } from "@/store/slices/reportSlice"
-import { getAllSymptoms } from "@/store/slices/symptomSlice"
-import { useToast } from "@/hooks/use-toast"
-import { 
-  Download, 
-  FileText, 
-  Share2, 
-  Calendar,
-  Filter,
-  Eye,
-  Trash2
-} from "lucide-react"
+import { useState, useEffect, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Header } from "@/components/layout/Header";
+import { useAppDispatch, useAppSelector } from "@/hooks/redux";
+import {
+  generateWeeklyReport,
+  generateCustomReport,
+  getUserReports,
+  downloadReportPdf,
+  clearError,
+} from "@/store/slices/reportSlice";
+import { getAllSymptoms } from "@/store/slices/symptomSlice";
+import { useToast } from "@/hooks/use-toast";
+import { Download, FileText, Calendar as CalendarIcon } from "lucide-react";
+import Calendar from "@/components/ui/calendar";
+import html2canvas from "html2canvas"; //added
+import { jsPDF } from "jspdf"; //added
 
 export default function Reports() {
-  const dispatch = useAppDispatch()
-  const { toast } = useToast()
-  
-  const { reports, isLoading: reportsLoading, error } = useAppSelector((state) => state.reports)
-  const { symptoms } = useAppSelector((state) => state.symptoms)
-  
+  const dispatch = useAppDispatch();
+  const { toast } = useToast();
+  const reportRef = useRef<HTMLDivElement | null>(null); //added for pdf
+
+  const {
+    reports,
+    isLoading: reportsLoading,
+    error,
+  } = useAppSelector((state) => state.reports);
+  const { symptoms } = useAppSelector((state) => state.symptoms);
+
   const [dateRange, setDateRange] = useState({
-    start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    end: new Date().toISOString().split('T')[0]
-  })
-  
-  const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([])
-  const [reportFormat, setReportFormat] = useState("pdf")
-  const [isGenerating, setIsGenerating] = useState(false)
+    start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0],
+    end: new Date().toISOString().split("T")[0],
+  });
+
+  const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
+  const [reportFormat, setReportFormat] = useState("pdf");
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false); //old //new change
+  // const [isGeneratingWeekly, setIsGeneratingWeekly] = useState(false); //  added //old
+  // const [isGeneratingCustom, setIsGeneratingCustom] = useState(false); //  added //old
+
+  // Calendar popup visibility state
+  const [showStartCalendar, setShowStartCalendar] = useState(false);
+  const [showEndCalendar, setShowEndCalendar] = useState(false);
+
+  // Refs for outside click detection
+  const startCalendarRef = useRef<HTMLDivElement>(null);
+  const endCalendarRef = useRef<HTMLDivElement>(null);
+  const startInputRef = useRef<HTMLInputElement>(null);
+  const endInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    dispatch(getAllSymptoms())
-    dispatch(getUserReports())
+    dispatch(getAllSymptoms());
+    dispatch(getUserReports());
     return () => {
-      dispatch(clearError())
-    }
-  }, [dispatch])
+      dispatch(clearError());
+    };
+  }, [dispatch]);
 
   useEffect(() => {
     if (error) {
@@ -49,114 +74,160 @@ export default function Reports() {
         title: "Error",
         description: error,
         variant: "destructive",
-      })
-      dispatch(clearError())
+      });
+      dispatch(clearError());
     }
-  }, [error, toast, dispatch])
+  }, [error, toast, dispatch]);
+
+  // Close calendars on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        startCalendarRef.current &&
+        !startCalendarRef.current.contains(event.target as Node) &&
+        startInputRef.current &&
+        !startInputRef.current.contains(event.target as Node)
+      ) {
+        setShowStartCalendar(false);
+      }
+      if (
+        endCalendarRef.current &&
+        !endCalendarRef.current.contains(event.target as Node) &&
+        endInputRef.current &&
+        !endInputRef.current.contains(event.target as Node)
+      ) {
+        setShowEndCalendar(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const reportPresets = [
     {
       name: "Last 7 Days",
       description: "Quick overview of recent symptoms",
-      range: 7
+      range: 7,
     },
     {
-      name: "Last 30 Days", 
+      name: "Last 30 Days",
       description: "Comprehensive monthly summary",
-      range: 30
+      range: 30,
     },
     {
       name: "Last 3 Months",
       description: "Quarterly health trends",
-      range: 90
+      range: 90,
     },
     {
       name: "Last 6 Months",
       description: "Extended pattern analysis",
-      range: 180
-    }
-  ]
+      range: 180,
+    },
+  ];
 
   const handleSymptomToggle = (symptom: string) => {
-    setSelectedSymptoms(prev => 
-      prev.includes(symptom) 
-        ? prev.filter(s => s !== symptom)
+    setSelectedSymptoms((prev) =>
+      prev.includes(symptom)
+        ? prev.filter((s) => s !== symptom)
         : [...prev, symptom]
-    )
-  }
+    );
+  };
 
   const setPresetRange = (days: number) => {
-    const end = new Date()
-    const start = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+    const end = new Date();
+    const start = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
     setDateRange({
-      start: start.toISOString().split('T')[0],
-      end: end.toISOString().split('T')[0]
-    })
-  }
+      start: start.toISOString().split("T")[0],
+      end: end.toISOString().split("T")[0],
+    });
+  };
 
   const generateReport = async () => {
-    setIsGenerating(true)
+    setIsGeneratingReport(true); //old //new change
+    // setIsGeneratingCustom(true); //  only affect custom button //old
     try {
-      const report = await dispatch(generateCustomReport({
-        startDate: dateRange.start,
-        endDate: dateRange.end
-      })).unwrap()
-      
+      await dispatch(
+        generateCustomReport({
+          startDate: dateRange.start,
+          endDate: dateRange.end,
+        })
+      ).unwrap();
       toast({
         title: "Report Generated",
         description: "Your health report has been generated successfully!",
-      })
-      
-      // Refresh reports list
-      dispatch(getUserReports())
-    } catch (error) {
-      // Error handled in useEffect
+      });
+      dispatch(getUserReports());
+    } catch {
     } finally {
-      setIsGenerating(false)
+      setIsGeneratingReport(false); //old //new change
+      // setIsGeneratingCustom(false); // only reset custom //old
     }
-  }
+  };
 
-  const generateWeeklyReportHandler = async () => {
-    setIsGenerating(true)
-    try {
-      const report = await dispatch(generateWeeklyReport()).unwrap()
-      toast({
-        title: "Weekly Report Generated",
-        description: "Your weekly health report has been generated!",
-      })
-      dispatch(getUserReports())
-    } catch (error) {
-      // Error handled in useEffect
-    } finally {
-      setIsGenerating(false)
-    }
-  }
+  //added exporting pdf function
+  const handleDownloadPdf = async () => {
+    if (!reportRef.current) return;
+
+    const element = reportRef.current;
+    const canvas = await html2canvas(element);
+    const data = canvas.toDataURL("image/png");
+
+    const pdf = new jsPDF();
+    const imgProperties = pdf.getImageProperties(data);
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (imgProperties.height * pdfWidth) / imgProperties.width;
+
+    pdf.addImage(data, "PNG", 0, 0, pdfWidth, pdfHeight);
+    pdf.save("report-preview.pdf");
+  };
+
+  //REMOVED SECTION
+  // const generateWeeklyReportHandler = async () => {
+  //   // setIsGenerating(true); //old
+  //   setIsGeneratingWeekly(true); //  only affect weekly button
+  //   try {
+  //     await dispatch(generateWeeklyReport()).unwrap();
+  //     toast({
+  //       title: "Weekly Report Generated",
+  //       description: "Your weekly health report has been generated!",
+  //     });
+  //     dispatch(getUserReports());
+  //   } catch {
+  //   } finally {
+  //     // setIsGenerating(false); //old
+  //     setIsGeneratingWeekly(false); // only reset weekly
+  //   }
+  // };
 
   const downloadReport = async (reportId: number) => {
     try {
-      const blob = await dispatch(downloadReportPdf(reportId)).unwrap()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `health-report-${reportId}.pdf`
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
-      
+      const blob = await dispatch(downloadReportPdf(reportId)).unwrap();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `health-report-${reportId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
       toast({
         title: "Download Started",
         description: "Your report is being downloaded.",
-      })
-    } catch (error) {
-      // Error handled in useEffect
-    }
-  }
+      });
+    } catch {}
+  };
+
+  // Format ISO date string to MM/DD/YYYY for display
+  const formatDisplayDate = (isoDate: string) => {
+    return new Date(isoDate).toLocaleDateString("en-US");
+  };
 
   return (
     <div className="min-h-screen bg-background-soft">
       <Header />
-      
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
@@ -165,7 +236,8 @@ export default function Reports() {
               Generate Medical Reports
             </h1>
             <p className="text-lg font-body text-muted-foreground">
-              Create comprehensive health reports to share with your healthcare providers
+              Create comprehensive health reports to share with your healthcare
+              providers
             </p>
           </div>
 
@@ -175,23 +247,25 @@ export default function Reports() {
               {/* Quick Presets */}
               <Card className="shadow-card border-border">
                 <CardHeader>
-                  <CardTitle className="font-ui text-foreground">Quick Presets</CardTitle>
+                  <CardTitle className="font-ui text-foreground">
+                    Quick Presets
+                  </CardTitle>
                   <CardDescription className="font-body">
                     Choose a common time range
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {reportPresets.map((preset) => (
+                    {reportPresets.map(({ name, description, range }) => (
                       <Button
-                        key={preset.name}
+                        key={name}
                         variant="soft"
                         className="h-auto p-4 flex-col items-start"
-                        onClick={() => setPresetRange(preset.range)}
+                        onClick={() => setPresetRange(range)}
                       >
-                        <div className="font-ui font-medium">{preset.name}</div>
+                        <div className="font-ui font-medium">{name}</div>
                         <div className="text-xs text-muted-foreground mt-1">
-                          {preset.description}
+                          {description}
                         </div>
                       </Button>
                     ))}
@@ -202,38 +276,106 @@ export default function Reports() {
               {/* Custom Date Range */}
               <Card className="shadow-card border-border">
                 <CardHeader>
-                  <CardTitle className="font-ui text-foreground">Custom Date Range</CardTitle>
+                  <CardTitle className="font-ui text-foreground">
+                    Custom Date Range
+                  </CardTitle>
                   <CardDescription className="font-body">
                     Select specific dates for your report
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="start-date" className="font-ui">Start Date</Label>
-                      <div className="relative">
-                        <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="start-date"
-                          type="date"
-                          value={dateRange.start}
-                          onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                          className="pl-10 font-body"
-                        />
-                      </div>
+                    {/* Start Date */}
+                    <div className="space-y-2 relative" ref={startCalendarRef}>
+                      <Label htmlFor="start-date" className="font-ui">
+                        Start Date
+                      </Label>
+                      <input
+                        id="start-date"
+                        ref={startInputRef}
+                        readOnly
+                        type="text"
+                        value={formatDisplayDate(dateRange.start)}
+                        onClick={() => setShowStartCalendar((v) => !v)}
+                        className="pl-10 font-body cursor-pointer w-full border border-gray-300 rounded-md h-10"
+                      />
+                      <CalendarIcon className="absolute left-3 top-[38px] h-4 w-4 text-muted-foreground pointer-events-none" />
+                      {showStartCalendar && (
+                        <div className="absolute z-10 mt-1 bg-white shadow-lg rounded-md">
+                          {/* <Calendar
+                            mode="single"
+                            selected={new Date(dateRange.start)}
+                            onSelect={(d) => {
+                              if (d) {
+                                setDateRange((prev) => ({
+                                  ...prev,
+                                  start: d.toISOString().split("T")[0],
+                                }));
+                                setShowStartCalendar(false);
+                              }
+                            }}
+                            to={new Date()}
+                          /> */}
+                          <Calendar
+                            selected={new Date(dateRange.start)}
+                            onSelect={(d) => {
+                              if (d) {
+                                setDateRange((prev) => ({
+                                  ...prev,
+                                  start: d.toISOString().split("T")[0],
+                                }));
+                                setShowStartCalendar(false);
+                              }
+                            }}
+                          />
+                        </div>
+                      )}
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="end-date" className="font-ui">End Date</Label>
-                      <div className="relative">
-                        <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="end-date"
-                          type="date"
-                          value={dateRange.end}
-                          onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                          className="pl-10 font-body"
-                        />
-                      </div>
+                    {/* End Date */}
+                    <div className="space-y-2 relative" ref={endCalendarRef}>
+                      <Label htmlFor="end-date" className="font-ui">
+                        End Date
+                      </Label>
+                      <input
+                        id="end-date"
+                        ref={endInputRef}
+                        readOnly
+                        type="text"
+                        value={formatDisplayDate(dateRange.end)}
+                        onClick={() => setShowEndCalendar((v) => !v)}
+                        className="pl-10 font-body cursor-pointer w-full border border-gray-300 rounded-md h-10"
+                      />
+                      <CalendarIcon className="absolute left-3 top-[38px] h-4 w-4 text-muted-foreground pointer-events-none" />
+                      {showEndCalendar && (
+                        <div className="absolute z-10 mt-1 bg-white shadow-lg rounded-md">
+                          {/* <Calendar
+                            mode="single"
+                            selected={new Date(dateRange.end)}
+                            onSelect={(d) => {
+                              if (d) {
+                                setDateRange((prev) => ({
+                                  ...prev,
+                                  end: d.toISOString().split("T")[0],
+                                }));
+                                setShowEndCalendar(false);
+                              }
+                            }}
+                            to={new Date()}
+                          /> */}
+                          <Calendar
+                            selected={new Date(dateRange.end)}
+                            onSelect={(d) => {
+                              if (d) {
+                                setDateRange((prev) => ({
+                                  ...prev,
+                                  end: d.toISOString().split("T")[0],
+                                }));
+                                setShowEndCalendar(false);
+                              }
+                            }}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -242,7 +384,9 @@ export default function Reports() {
               {/* Symptom Selection */}
               <Card className="shadow-card border-border">
                 <CardHeader>
-                  <CardTitle className="font-ui text-foreground">Filter by Symptoms</CardTitle>
+                  <CardTitle className="font-ui text-foreground">
+                    Filter by Symptoms
+                  </CardTitle>
                   <CardDescription className="font-body">
                     Select specific symptoms to include (leave empty for all)
                   </CardDescription>
@@ -250,14 +394,19 @@ export default function Reports() {
                 <CardContent>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {symptoms.slice(0, 12).map((symptom) => (
-                      <div key={symptom.id} className="flex items-center space-x-2">
+                      <div
+                        key={symptom.id}
+                        className="flex items-center space-x-2"
+                      >
                         <Checkbox
                           id={symptom.name}
                           checked={selectedSymptoms.includes(symptom.name)}
-                          onCheckedChange={() => handleSymptomToggle(symptom.name)}
+                          onCheckedChange={() =>
+                            handleSymptomToggle(symptom.name)
+                          }
                         />
-                        <Label 
-                          htmlFor={symptom.name} 
+                        <Label
+                          htmlFor={symptom.name}
                           className="text-sm font-body cursor-pointer"
                         >
                           {symptom.name}
@@ -270,9 +419,9 @@ export default function Reports() {
                       <p className="text-sm font-body text-muted-foreground">
                         Selected: {selectedSymptoms.join(", ")}
                       </p>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => setSelectedSymptoms([])}
                         className="mt-2"
                       >
@@ -286,7 +435,9 @@ export default function Reports() {
               {/* Report Format */}
               <Card className="shadow-card border-border">
                 <CardHeader>
-                  <CardTitle className="font-ui text-foreground">Export Format</CardTitle>
+                  <CardTitle className="font-ui text-foreground">
+                    Export Format
+                  </CardTitle>
                   <CardDescription className="font-body">
                     Choose your preferred file format
                   </CardDescription>
@@ -317,7 +468,10 @@ export default function Reports() {
                         onChange={(e) => setReportFormat(e.target.value)}
                         className="text-primary"
                       />
-                      <Label htmlFor="word" className="font-body cursor-pointer">
+                      <Label
+                        htmlFor="word"
+                        className="font-body cursor-pointer"
+                      >
                         Word Document - Editable format
                       </Label>
                     </div>
@@ -331,11 +485,15 @@ export default function Reports() {
               {/* Report Summary */}
               <Card className="shadow-card border-border">
                 <CardHeader>
-                  <CardTitle className="font-ui text-foreground">Report Summary</CardTitle>
+                  <CardTitle className="font-ui text-foreground">
+                    Report Summary
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label className="font-ui text-sm text-muted-foreground">Date Range</Label>
+                    <Label className="font-ui text-sm text-muted-foreground">
+                      Date Range
+                    </Label>
                     <p className="font-body">
                       {new Date(dateRange.start).toLocaleDateString()} -{" "}
                       {new Date(dateRange.end).toLocaleDateString()}
@@ -346,7 +504,12 @@ export default function Reports() {
                       Duration
                     </Label>
                     <p className="font-body">
-                      {Math.ceil((new Date(dateRange.end).getTime() - new Date(dateRange.start).getTime()) / (1000 * 60 * 60 * 24))} days
+                      {Math.ceil(
+                        (new Date(dateRange.end).getTime() -
+                          new Date(dateRange.start).getTime()) /
+                          (1000 * 60 * 60 * 24)
+                      )}{" "}
+                      days
                     </p>
                   </div>
                   <div>
@@ -354,45 +517,65 @@ export default function Reports() {
                       Symptoms Filter
                     </Label>
                     <p className="font-body">
-                      {selectedSymptoms.length === 0 
-                        ? "All symptoms" 
-                        : `${selectedSymptoms.length} selected`
-                      }
+                      {selectedSymptoms.length === 0
+                        ? "All symptoms"
+                        : `${selectedSymptoms.length} selected`}
                     </p>
                   </div>
                   <div>
-                    <Label className="font-ui text-sm text-muted-foreground">Format</Label>
+                    <Label className="font-ui text-sm text-muted-foreground">
+                      Format
+                    </Label>
                     <p className="font-body capitalize">{reportFormat}</p>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Actions */}
-              <Card className="shadow-card border-border">
+              {/* ✅ Changed: Only ONE Generate Report button */}
+              <Card className="shadow-card border-border" ref={reportRef}>
                 <CardHeader>
-                  <CardTitle className="font-ui text-foreground">Actions</CardTitle>
+                  <CardTitle className="font-ui text-foreground">
+                    Actions
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <Button 
-                    variant="medical" 
-                    className="w-full justify-start"
-                    onClick={generateWeeklyReportHandler}
-                    disabled={isGenerating}
-                  >
-                    {isGenerating ? (
-                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                    ) : (
-                      <FileText className="h-4 w-4 mr-2" />
-                    )}
-                    Generate Weekly Report
-                  </Button>
-                  <Button 
-                    variant="outline" 
+
+                  {/* Generate Weekly report button */}
+                  <Button
+                    variant="medical"
                     className="w-full justify-start"
                     onClick={generateReport}
-                    disabled={isGenerating}
+                    disabled={isGeneratingReport}
                   >
-                    {isGenerating ? (
+                    {isGeneratingReport ? (
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                    ) : (
+                      <Download className="h-4 w-4 mr-2" />
+                    )}
+                    Generate Report
+                  </Button>
+
+                  {/* Download PDF button */}
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={handleDownloadPdf}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download as PDF
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Custom Report Button
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={generateReport}
+                    disabled={isGeneratingCustom} //  changed
+                  >
+                    {isGeneratingCustom ? ( //  changed
                       <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
                     ) : (
                       <Download className="h-4 w-4 mr-2" />
@@ -400,12 +583,14 @@ export default function Reports() {
                     Generate Custom Report
                   </Button>
                 </CardContent>
-              </Card>
+              </Card> */}
 
               {/* Previous Reports */}
               <Card className="shadow-card border-border">
                 <CardHeader>
-                  <CardTitle className="font-ui text-foreground">Previous Reports</CardTitle>
+                  <CardTitle className="font-ui text-foreground">
+                    Previous Reports
+                  </CardTitle>
                   <CardDescription className="font-body">
                     Your generated health reports
                   </CardDescription>
@@ -421,13 +606,21 @@ export default function Reports() {
                     </p>
                   ) : (
                     reports.slice(0, 5).map((report) => (
-                      <div key={report.id} className="flex items-center justify-between p-3 bg-muted rounded-md">
+                      <div
+                        key={report.id}
+                        className="flex items-center justify-between p-3 bg-muted rounded-md"
+                      >
                         <div className="flex-1">
                           <p className="text-sm font-medium">
-                            {new Date(report.weekStartDate).toLocaleDateString()} - {new Date(report.weekEndDate).toLocaleDateString()}
+                            {new Date(
+                              report.weekStartDate
+                            ).toLocaleDateString()}{" "}
+                            -{" "}
+                            {new Date(report.weekEndDate).toLocaleDateString()}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            Generated {new Date(report.generatedAt).toLocaleDateString()}
+                            Generated{" "}
+                            {new Date(report.generatedAt).toLocaleDateString()}
                           </p>
                         </div>
                         <Button
@@ -448,5 +641,5 @@ export default function Reports() {
         </div>
       </main>
     </div>
-  )
+  );
 }
