@@ -23,8 +23,7 @@ public class CustomOidcUserService implements OAuth2UserService<OidcUserRequest,
     @Override
     public OidcUser loadUser(OidcUserRequest userRequest) throws OAuth2AuthenticationException {
         OidcUser oidcUser = delegate.loadUser(userRequest);
-
-        final String googleId = oidcUser.getSubject(); // "sub"
+        final String googleId = oidcUser.getSubject(); 
         final String name = oidcUser.<String>getAttribute("name");
         final String email = oidcUser.<String>getAttribute("email");
         final String picture = oidcUser.<String>getAttribute("picture");

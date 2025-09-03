@@ -7,6 +7,7 @@ import com.medmuse.medmuse_backend.entity.Report;
 import lombok.Data;
 
 @Data
+
 public class ReportDto {
     private Long id;
     private LocalDate weekStartDate;

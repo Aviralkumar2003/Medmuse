@@ -9,29 +9,24 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.medmuse.medmuse_backend.dto.SymptomEntryDto;
-import com.medmuse.medmuse_backend.entity.Symptom;
-import com.medmuse.medmuse_backend.entity.SymptomEntry;
-import com.medmuse.medmuse_backend.entity.User;
-import com.medmuse.medmuse_backend.repository.SymptomEntryRepository;
-import com.medmuse.medmuse_backend.repository.SymptomRepository;
-import com.medmuse.medmuse_backend.repository.UserRepository;
+import com.medmuse.medmuse_backend.dto.SymptomsFilterRequestDto;
+import com.medmuse.medmuse_backend.entity.*;
+import com.medmuse.medmuse_backend.repository.*;
 import com.medmuse.medmuse_backend.service.interfaces.SymptomServiceInterface;
+import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
+@Slf4j
 public class SymptomService implements SymptomServiceInterface {
     
     private final SymptomRepository symptomRepository;
     private final SymptomEntryRepository symptomEntryRepository;
     private final UserRepository userRepository;
     
-    public SymptomService(SymptomRepository symptomRepository,
-                         SymptomEntryRepository symptomEntryRepository,
-                         UserRepository userRepository) {
-        this.symptomRepository = symptomRepository;
-        this.symptomEntryRepository = symptomEntryRepository;
-        this.userRepository = userRepository;
-    }
+   
 
     @Override
     public List<Symptom> getAllActiveSymptoms() {
@@ -115,4 +110,35 @@ public class SymptomService implements SymptomServiceInterface {
         
         symptomEntryRepository.delete(entry);
     }
+
+   @Override
+    public List<Symptom> getSymptomsByUserAndDate(Long userId, LocalDate localDate) {
+        log.info("Fetching symptoms for userId: {} on date: {}", userId, localDate);
+        return symptomRepository.findByUserIdAndDate(userId, localDate);
+    }
+
+    @Override
+    public List<Symptom> getSymptomsByUser(Long userId) {
+        log.info("Fetching all symptoms for userId: {}", userId);
+        return symptomRepository.findByUserId(userId);
+    }
+@Override
+public List<SymptomEntry> filterSympotoms(SymptomsFilterRequestDto symptomsFilterRequest) {
+    log.info("Fetching the symptoms as per the filter");
+
+    List<SymptomEntry> allEntries = symptomEntryRepository.findAll();
+
+    return allEntries.stream()
+            .filter(s -> symptomsFilterRequest.getDate() == null 
+                    || (s.getEntryDate() != null && s.getEntryDate().equals(symptomsFilterRequest.getDate())))
+            .filter(s -> symptomsFilterRequest.getSymptom() == null 
+                    || (s.getSymptom() != null 
+                        && s.getSymptom().getName().equalsIgnoreCase(symptomsFilterRequest.getSymptom())))
+            .filter(s -> symptomsFilterRequest.getSeverity() == null 
+                    || (s.getSeverity() != null 
+                        && s.getSeverity().equals(symptomsFilterRequest.getSeverity())))
+            .collect(Collectors.toList());
+}
+
+
 }

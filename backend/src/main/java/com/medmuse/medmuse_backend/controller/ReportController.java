@@ -2,42 +2,27 @@ package com.medmuse.medmuse_backend.controller;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
+import org.springframework.http.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.medmuse.medmuse_backend.dto.ReportDto;
-import com.medmuse.medmuse_backend.dto.UserDto;
-import com.medmuse.medmuse_backend.service.interfaces.ReportServiceInterface;
-import com.medmuse.medmuse_backend.service.interfaces.UserServiceInterface;
+import org.springframework.web.bind.annotation.*;
+import com.medmuse.medmuse_backend.dto.*;
+import com.medmuse.medmuse_backend.service.interfaces.*;
 import com.medmuse.medmuse_backend.util.UserContext;
 
+import lombok.RequiredArgsConstructor;
+
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/reports")
 @CrossOrigin(origins = "${medmuse.cors.allowed-origins}")
 public class ReportController {
     
     private final ReportServiceInterface reportService;
     private final UserServiceInterface userService;
-    
-    public ReportController(ReportServiceInterface reportService, UserServiceInterface userService) {
-        this.reportService = reportService;
-        this.userService = userService;
-    }
     
     @PostMapping("/generate")
     public CompletableFuture<ResponseEntity<ReportDto>> generateWeeklyReport(

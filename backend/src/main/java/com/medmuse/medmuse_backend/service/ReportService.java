@@ -25,25 +25,18 @@ import com.medmuse.medmuse_backend.service.strategy.DocumentGenerationStrategy;
 import com.medmuse.medmuse_backend.service.strategy.ReportGenerationStrategy;
 import com.medmuse.medmuse_backend.util.ExceptionHandler;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class ReportService implements ReportServiceInterface {
     
     private final ReportRepository reportRepository;
     private final UserRepository userRepository;
     private final SymptomServiceInterface symptomService;
     private final StrategyFactory strategyFactory;
-    
-    public ReportService(ReportRepository reportRepository,
-                        UserRepository userRepository,
-                        SymptomServiceInterface symptomService,
-                        StrategyFactory strategyFactory) {
-        this.reportRepository = reportRepository;
-        this.userRepository = userRepository;
-        this.symptomService = symptomService;
-        this.strategyFactory = strategyFactory;
-    }
-    
+   
     @Async
     @Override
     public CompletableFuture<ReportDto> generateWeeklyReport(Long userId) {

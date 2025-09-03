@@ -7,7 +7,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import com.medmuse.medmuse_backend.dto.SymptomEntryDto;
+import com.medmuse.medmuse_backend.dto.SymptomsFilterRequestDto;
 import com.medmuse.medmuse_backend.entity.Symptom;
+import com.medmuse.medmuse_backend.entity.SymptomEntry;
 
 public interface SymptomServiceInterface {
     List<Symptom> getAllActiveSymptoms();
@@ -19,4 +21,9 @@ public interface SymptomServiceInterface {
     List<SymptomEntryDto> getUserSymptomEntriesByDateRange(Long userId, LocalDate startDate, LocalDate endDate);
     SymptomEntryDto updateSymptomEntry(Long userId, Long entryId, SymptomEntryDto updateDto);
     void deleteSymptomEntry(Long userId, Long entryId);
+    List<Symptom> getSymptomsByUserAndDate(Long userId, LocalDate localDate);
+    List<Symptom> getSymptomsByUser(Long userId);
+    
+    List<SymptomEntry> filterSympotoms(SymptomsFilterRequestDto symptomsFilterRequest);
+
 }
