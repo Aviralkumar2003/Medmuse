@@ -6,27 +6,20 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.bind.annotation.*;
 import com.medmuse.medmuse_backend.dto.UserDto;
 import com.medmuse.medmuse_backend.service.interfaces.UserServiceInterface;
 import com.medmuse.medmuse_backend.util.UserContext;
 
+import lombok.RequiredArgsConstructor;
+
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/users")
 @CrossOrigin(origins = "${medmuse.cors.allowed-origins}")
 public class UserController {
 
     private final UserServiceInterface userService;
-
-    public UserController(UserServiceInterface userService) {
-        this.userService = userService;
-    }
 
     @GetMapping("/me")
     public ResponseEntity<UserDto> getCurrentUser(@AuthenticationPrincipal OidcUser principal) {

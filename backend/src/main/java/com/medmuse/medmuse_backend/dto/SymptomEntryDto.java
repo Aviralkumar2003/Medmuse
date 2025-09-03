@@ -35,6 +35,7 @@ public class SymptomEntryDto {
     private LocalDateTime createdAt;
     
     // Constructors
+
     public SymptomEntryDto() {}
     
     public SymptomEntryDto(SymptomEntry entry) {

@@ -1,3 +1,4 @@
+
 # MedMuse Backend API Documentation
 
 Base URL: `/api`

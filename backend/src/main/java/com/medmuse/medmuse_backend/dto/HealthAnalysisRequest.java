@@ -5,6 +5,7 @@ import java.util.List;
 import lombok.Data;
 
 @Data
+
 public class HealthAnalysisRequest {
     private Long userId;
     private LocalDate startDate;
