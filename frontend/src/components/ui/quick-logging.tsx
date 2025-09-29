@@ -1,25 +1,17 @@
 import * as React from "react"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "./card"
 import { Button } from "./button"
 import { Input } from "./input"
 import { Badge } from "./badge"
-import { 
-  Plus, 
-  X, 
-  Search,
-  Activity,
-  Clock,
-  MessageSquare,
-  Edit3,
-  ArrowRight
-} from "lucide-react"
+import { X, Clock, MessageSquare, Edit3, Plus } from "lucide-react"
 import { SimpleNotes } from "./simple-notes"
 import { UnifiedSymptom } from "./symptom-list"
+import { SimpleSeveritySelector } from "./simple-severity-selector"
 
 interface QuickLoggingProps {
-  availableSymptoms: Array<{id: number, name: string}>
+  availableSymptoms: Array<{ id: number, name: string }>
   onSymptomUpdate: (symptom: UnifiedSymptom) => void
   onSymptomAdd: (symptom: UnifiedSymptom) => void
   onSymptomRemove: (symptomId: string) => void
@@ -29,26 +21,21 @@ interface QuickLoggingProps {
   date: string
 }
 
-export function QuickLogging({ 
-  availableSymptoms, 
-  onSymptomUpdate, 
-  onSymptomAdd, 
+export function QuickLogging({
+  availableSymptoms,
+  onSymptomUpdate,
+  onSymptomAdd,
   onSymptomRemove,
   selectedSymptom,
   symptoms,
-  isLoading = false, 
-  date 
+  isLoading = false,
+  date
 }: QuickLoggingProps) {
   const [newSymptom, setNewSymptom] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
   const [expandedSymptom, setExpandedSymptom] = useState<string | null>(null)
-  
-  // Filter symptoms that are in quick logging mode
-  const quickSymptoms = symptoms.filter(s => s.loggingType === 'quick')
 
-  const filteredSymptoms = availableSymptoms.filter(symptom =>
-    symptom.name.toLowerCase().includes(searchQuery.toLowerCase())
-  ).slice(0, 12)
+  const quickSymptoms = symptoms.filter(s => s.loggingType === 'quick')
 
   const addSymptomByName = (symptomName: string) => {
     if (symptomName && !symptoms.some(s => s.name === symptomName)) {
@@ -67,7 +54,7 @@ export function QuickLogging({
     }
   }
 
-  const addSymptom = (symptom: {id: number, name: string}) => {
+  const addSymptom = (symptom: { id: number, name: string }) => {
     if (!symptoms.some(s => s.id === symptom.id.toString())) {
       const newSymptom: UnifiedSymptom = {
         id: symptom.id.toString(),
@@ -102,20 +89,18 @@ export function QuickLogging({
   }
 
   const getSeverityColor = (value: number) => {
-    if (value <= 3) return "bg-green-100 text-green-800"
-    if (value <= 6) return "bg-yellow-100 text-yellow-800"
-    if (value <= 8) return "bg-orange-100 text-orange-800"
-    return "bg-red-100 text-red-800"
+    if (value <= 3) return "bg-green-100 text-green-800 border-green-200"
+    if (value <= 6) return "bg-yellow-100 text-yellow-800 border-yellow-200"
+    if (value <= 8) return "bg-orange-100 text-orange-800 border-orange-200"
+    return "bg-red-100 text-red-800 border-red-200"
   }
-
-  // Removed unused variables - using quickSymptoms instead
 
   return (
     <div className="space-y-6">
-      {/* Quick Add */}
+      {/* Symptom List Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Quick Add Symptoms</CardTitle>
+          <CardTitle className="text-lg">Select Symptoms</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2">
@@ -133,138 +118,99 @@ export function QuickLogging({
             </Button>
           </div>
 
-          {/* Search and Quick Selection */}
-          <div className="space-y-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search symptoms..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {filteredSymptoms.map((symptom) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {availableSymptoms
+              .filter(symptom => symptom.name.toLowerCase().includes(searchQuery.toLowerCase()))
+              .slice(0, 12)
+              .map((symptom) => (
                 <Button
                   key={symptom.id}
                   variant="soft"
                   size="sm"
                   onClick={() => addSymptom(symptom)}
-                  disabled={symptoms.some(s => s.id === symptom.id.toString())}
+                  disabled={quickSymptoms.some(s => s.id === symptom.id.toString())}
                   className="justify-start text-left h-auto p-2"
                 >
                   <div className="text-sm font-medium">{symptom.name}</div>
                 </Button>
               ))}
-            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Selected Symptoms */}
-      {quickSymptoms.length > 0 && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Quick Logged Symptoms ({quickSymptoms.length})</CardTitle>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Activity className="h-4 w-4" />
-                <span>Avg: {Math.round(quickSymptoms.reduce((sum, s) => sum + s.severity, 0) / quickSymptoms.length)}/10</span>
+      {/* Selected Symptoms Cards */}
+      {quickSymptoms.map((symptom) => (
+        <Card key={symptom.id} className="border-border">
+          <CardContent className="p-4">
+            {/* Header with emoji and severity badge */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="text-2xl">{getSeverityIcon(symptom.severity)}</div>
+                <h4 className="font-medium text-foreground truncate">{symptom.name}</h4>
+              </div>
+
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <div className={cn("text-xs font-medium px-2 py-1 rounded-md border", getSeverityColor(symptom.severity))}>
+                  {symptom.severity}/10
+                </div>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setExpandedSymptom(expandedSymptom === symptom.id ? null : symptom.id)}
+                  className="h-8 w-8 p-0"
+                >
+                  <Edit3 className="h-4 w-4" />
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeSymptom(symptom.id)}
+                  className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
             </div>
-          </CardHeader>
-          <CardContent>
+
+            {/* Quick Info */}
+            <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
+              <div className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                <span>Just added</span>
+              </div>
+
+              {symptom.notes.trim().length > 0 && (
+                <div className="flex items-center gap-1">
+                  <MessageSquare className="h-3 w-3" />
+                  <span>Has notes</span>
+                </div>
+              )}
+            </div>
+
+            {/* Slider */}
+            <div className="space-y-3 mb-4">
+              <h5 className="text-sm font-medium">Severity Level</h5>
+              <SimpleSeveritySelector
+                value={symptom.severity}
+                onChange={(value) => updateSymptom(symptom.id, 'severity', value)}
+              />
+            </div>
+
+            {/* Notes */}
             <div className="space-y-3">
-              {quickSymptoms.map((symptom) => (
-                 <div key={symptom.id} className="border rounded-lg overflow-hidden">
-                   <div className="flex items-center justify-between p-3">
-                     <div className="flex items-center gap-3">
-                       <span className="text-lg">{getSeverityIcon(symptom.severity)}</span>
-                       <div>
-                         <div className="font-medium">{symptom.name}</div>
-                         <div className="text-xs text-muted-foreground flex items-center gap-1">
-                           <Clock className="h-3 w-3" />
-                           <span>Just added</span>
-                           {symptom.notes.trim().length > 0 && (
-                             <>
-                               <MessageSquare className="h-3 w-3" />
-                               <span>Has notes</span>
-                             </>
-                           )}
-                         </div>
-                       </div>
-                     </div>
-                     
-                     <div className="flex items-center gap-2">
-                       {/* Quick Severity Buttons */}
-                       <div className="flex gap-1">
-                         {[3, 5, 7].map((severity) => (
-                           <Button
-                             key={severity}
-                             variant={symptom.severity === severity ? "default" : "outline"}
-                             size="sm"
-                             onClick={() => updateSymptom(symptom.id, 'severity', severity)}
-                             className={cn(
-                               "h-8 w-8 p-0 text-xs",
-                               symptom.severity === severity && getSeverityColor(severity)
-                             )}
-                           >
-                             {severity}
-                           </Button>
-                         ))}
-                       </div>
-                       
-                       <Badge variant="secondary" className={cn("text-xs", getSeverityColor(symptom.severity))}>
-                         {symptom.severity}/10
-                       </Badge>
-                       
-                       <Button
-                         variant="ghost"
-                         size="sm"
-                         onClick={() => setExpandedSymptom(expandedSymptom === symptom.id ? null : symptom.id)}
-                         className="h-8 w-8 p-0"
-                       >
-                         <Edit3 className="h-4 w-4" />
-                       </Button>
-                       
-                       <Button
-                         variant="ghost"
-                         size="sm"
-                         onClick={() => removeSymptom(symptom.id)}
-                         className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                       >
-                         <X className="h-4 w-4" />
-                       </Button>
-                     </div>
-                   </div>
-                   
-                   {/* Expanded Notes Section */}
-                   {expandedSymptom === symptom.id && (
-                     <div className="border-t bg-muted/30 p-3">
-                       <div className="space-y-3">
-                         <div className="flex items-center gap-2">
-                           <MessageSquare className="h-4 w-4 text-blue-500" />
-                           <span className="text-sm font-medium">Additional Notes</span>
-                         </div>
-                         <SimpleNotes
-                           value={symptom.notes}
-                           onChange={(value) => updateSymptom(symptom.id, 'notes', value)}
-                           placeholder={`Describe your ${symptom.name.toLowerCase()}...`}
-                           maxLength={150}
-                         />
-                       </div>
-                     </div>
-                   )}
-                 </div>
-               ))}
-             </div>
+              <h5 className="text-sm font-medium">Additional Notes</h5>
+              <SimpleNotes
+                value={symptom.notes}
+                onChange={(value) => updateSymptom(symptom.id, 'notes', value)}
+                placeholder={`Describe your ${symptom.name.toLowerCase()} in detail...`}
+                maxLength={500}
+              />
+            </div>
           </CardContent>
         </Card>
-      )}
-
-      {/* No individual save button - using common save from parent */}
+      ))}
     </div>
   )
 }
