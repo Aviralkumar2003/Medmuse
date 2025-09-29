@@ -1,24 +1,19 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Header } from "@/components/layout/Header";
 import { useToast } from "@/hooks/use-toast";
 import { useAppDispatch, useAppSelector } from "@/hooks/redux";
 import { getAllSymptoms, clearError } from "@/store/slices/symptomSlice";
 import { createSymptomEntries } from "@/store/slices/symptomEntrySlice";
-import {
-  Calendar as CalendarIcon,
-  Clock as ClockIcon,
-  Activity,
-  MessageSquare,
-} from "lucide-react";
+import { Activity, ClockIcon, MessageSquare, Brain } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { QuickLogging } from "@/components/ui/quick-logging";
 import { DetailedLogging } from "@/components/ui/detailed-logging";
 import { SymptomList, UnifiedSymptom } from "@/components/ui/symptom-list";
-import Calendar from "@/components/ui/calendar";
+import { DateTimePicker } from "@/components/shared/DateTimePicker";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { QuickTips } from "@/components/shared/QuickTips";
 
 export default function LogSymptoms() {
   const dispatch = useAppDispatch();
@@ -34,17 +29,7 @@ export default function LogSymptoms() {
 
   // States
   const [date, setDate] = useState(new Date());
-  const [showCalendar, setShowCalendar] = useState(false);
-
-  // Time state and picker
   const [time, setTime] = useState(new Date().toTimeString().slice(0, 5)); // "HH:mm"
-  const [showTimePicker, setShowTimePicker] = useState(false);
-  const [hours, setHours] = useState<number>(
-    parseInt(time.split(":")[0], 10)
-  );
-  const [minutes, setMinutes] = useState<number>(
-    parseInt(time.split(":")[1], 10)
-  );
 
   const [symptoms, setSymptoms] = useState<UnifiedSymptom[]>([]);
   const [selectedSymptomId, setSelectedSymptomId] = useState<string | null>(
@@ -56,37 +41,6 @@ export default function LogSymptoms() {
   const formattedDate = date.toLocaleDateString("en-US");
   const formattedDateISO = date.toISOString().split("T")[0];
 
-  // Sync state if time changes
-  useEffect(() => {
-    const [h, m] = time.split(":").map(Number);
-    setHours(h);
-    setMinutes(m);
-  }, [time]);
-
-  // Close calendar and time picker on outside clicks
-  const calendarRef = useRef<HTMLDivElement>(null);
-  const timePickerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        calendarRef.current &&
-        !calendarRef.current.contains(event.target as Node)
-      ) {
-        setShowCalendar(false);
-      }
-      if (
-        timePickerRef.current &&
-        !timePickerRef.current.contains(event.target as Node)
-      ) {
-        setShowTimePicker(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
 
   useEffect(() => {
     dispatch(getAllSymptoms());
@@ -142,13 +96,6 @@ export default function LogSymptoms() {
     });
   };
 
-  // Confirm time selection
-  const confirmTime = (h: number, m: number) => {
-    setHours(h);
-    setMinutes(m);
-    setTime(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
-    setShowTimePicker(false);
-  };
 
   // Save symptom entries
   const handleSaveAll = async () => {
@@ -185,19 +132,12 @@ export default function LogSymptoms() {
 
   return (
     <div className="min-h-screen bg-background-soft">
-      <Header />
-
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-ui font-bold text-foreground mb-2">
-              Log Your Symptoms
-            </h1>
-            <p className="text-lg font-body text-muted-foreground">
-              Record how you're feeling today to track your health over time
-            </p>
-          </div>
+          <PageHeader
+            title="Log Your Symptoms"
+            description="Record how you're feeling today to track your health over time"
+          />
 
           {/* Date and Time */}
           <Card className="shadow-card border-border mb-6">
@@ -207,88 +147,12 @@ export default function LogSymptoms() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Date Picker */}
-                <div className="space-y-2 relative" ref={calendarRef}>
-                  <Label htmlFor="date" className="font-ui">
-                    Date
-                  </Label>
-                  <input
-                    readOnly
-                    id="date"
-                    value={formattedDate}
-                    onClick={() => setShowCalendar((v) => !v)}
-                    className="pl-10 font-body cursor-pointer w-full border border-gray-300 rounded-md h-10"
-                  />
-                  <CalendarIcon className="absolute left-3 top-[38px] h-4 w-4 text-muted-foreground pointer-events-none" />
-                  {showCalendar && (
-                    <div className="absolute z-10 mt-1 bg-white shadow-lg rounded-md">
-                      <Calendar
-                        selected={date}
-                        onSelect={(d) => {
-                          if (d) {
-                            setDate(d);
-                            setShowCalendar(false);
-                          }
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Time Picker */}
-                <div className="space-y-2 relative" ref={timePickerRef}>
-                  <Label htmlFor="time" className="font-ui">
-                    Time
-                  </Label>
-                  <input
-                    readOnly
-                    id="time"
-                    value={time}
-                    onClick={() => setShowTimePicker((v) => !v)}
-                    className="pl-10 font-body cursor-pointer w-full border border-gray-300 rounded-md h-10"
-                  />
-                  <ClockIcon className="absolute left-3 top-[38px] h-4 w-4 text-muted-foreground pointer-events-none" />
-
-                  {showTimePicker && (
-                    <div className="absolute z-10 mt-1 bg-white shadow-lg rounded-md p-3 grid grid-cols-2 gap-3 w-48">
-                      {/* Hours */}
-                      <div className="max-h-40 overflow-y-auto pr-1">
-                        {[...Array(24)].map((_, h) => (
-                          <button
-                            key={h}
-                            className={`w-full text-left px-2 py-1 rounded ${
-                              h === hours
-                                ? "bg-primary text-white"
-                                : "hover:bg-gray-100"
-                            }`}
-                            onClick={() => confirmTime(h, minutes)}
-                          >
-                            {String(h).padStart(2, "0")}
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Minutes */}
-                      <div className="max-h-40 overflow-y-auto pl-1">
-                        {[...Array(60)].map((_, m) => (
-                          <button
-                            key={m}
-                            className={`w-full text-left px-2 py-1 rounded ${
-                              m === minutes
-                                ? "bg-primary text-white"
-                                : "hover:bg-gray-100"
-                            }`}
-                            onClick={() => confirmTime(hours, m)}
-                          >
-                            {String(m).padStart(2, "0")}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <DateTimePicker
+                date={date}
+                onDateChange={setDate}
+                time={time}
+                onTimeChange={setTime}
+              />
             </CardContent>
           </Card>
 
@@ -379,29 +243,22 @@ export default function LogSymptoms() {
           )}
 
           {/* Quick Tips */}
-          <Card className="shadow-card border-border mt-6">
-            <CardHeader>
-              <CardTitle className="font-ui text-foreground text-lg">
-                Quick Tips
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="h-3 w-3 text-blue-500" />
-                  <span>Be specific about location and timing</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Activity className="h-3 w-3 text-green-500" />
-                  <span>Note what makes it better or worse</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <ClockIcon className="h-3 w-3 text-orange-500" />
-                  <span>Log symptoms as soon as you notice them</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <QuickTips
+            tips={[
+              {
+                icon: <Brain className="h-3 w-3 text-blue-500" />,
+                text: "Be detailed about your symptoms and their effects"
+              },
+              {
+                icon: <Activity className="h-3 w-3 text-green-500" />,
+                text: "Note any patterns or triggers you observe"
+              },
+              {
+                icon: <MessageSquare className="h-3 w-3 text-orange-500" />,
+                text: "Add notes about what helps relieve symptoms"
+              }
+            ]}
+          />
         </div>
       </main>
     </div>

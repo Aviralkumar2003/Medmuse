@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Header } from "@/components/layout/Header";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { useAppDispatch, useAppSelector } from "@/hooks/redux";
 import {
   generateWeeklyReport,
@@ -20,10 +20,10 @@ import {
 } from "@/store/slices/reportSlice";
 import { getAllSymptoms } from "@/store/slices/symptomSlice";
 import { useToast } from "@/hooks/use-toast";
-import { Download, FileText, Calendar as CalendarIcon } from "lucide-react";
-import Calendar from "@/components/ui/calendar";
+import { Download, FileText } from "lucide-react";
 import html2canvas from "html2canvas"; //added
 import { jsPDF } from "jspdf"; //added
+import { DateRangePicker } from "@/components/shared/DateRangePicker";
 
 export default function Reports() {
   const dispatch = useAppDispatch();
@@ -36,6 +36,8 @@ export default function Reports() {
     error,
   } = useAppSelector((state) => state.reports);
   const { symptoms } = useAppSelector((state) => state.symptoms);
+
+  const pageDescription = "Generate and view detailed reports of your symptom history and health trends";
 
   const [dateRange, setDateRange] = useState({
     start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
@@ -227,19 +229,12 @@ export default function Reports() {
 
   return (
     <div className="min-h-screen bg-background-soft">
-      <Header />
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-ui font-bold text-foreground mb-2">
-              Generate Medical Reports
-            </h1>
-            <p className="text-lg font-body text-muted-foreground">
-              Create comprehensive health reports to share with your healthcare
-              providers
-            </p>
-          </div>
+          <PageHeader
+            title="Generate Medical Reports"
+            description="Create comprehensive health reports to share with your healthcare providers"
+          />
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Report Configuration */}
@@ -284,100 +279,16 @@ export default function Reports() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* Start Date */}
-                    <div className="space-y-2 relative" ref={startCalendarRef}>
-                      <Label htmlFor="start-date" className="font-ui">
-                        Start Date
-                      </Label>
-                      <input
-                        id="start-date"
-                        ref={startInputRef}
-                        readOnly
-                        type="text"
-                        value={formatDisplayDate(dateRange.start)}
-                        onClick={() => setShowStartCalendar((v) => !v)}
-                        className="pl-10 font-body cursor-pointer w-full border border-gray-300 rounded-md h-10"
-                      />
-                      <CalendarIcon className="absolute left-3 top-[38px] h-4 w-4 text-muted-foreground pointer-events-none" />
-                      {showStartCalendar && (
-                        <div className="absolute z-10 mt-1 bg-white shadow-lg rounded-md">
-                          {/* <Calendar
-                            mode="single"
-                            selected={new Date(dateRange.start)}
-                            onSelect={(d) => {
-                              if (d) {
-                                setDateRange((prev) => ({
-                                  ...prev,
-                                  start: d.toISOString().split("T")[0],
-                                }));
-                                setShowStartCalendar(false);
-                              }
-                            }}
-                            to={new Date()}
-                          /> */}
-                          <Calendar
-                            selected={new Date(dateRange.start)}
-                            onSelect={(d) => {
-                              if (d) {
-                                setDateRange((prev) => ({
-                                  ...prev,
-                                  start: d.toISOString().split("T")[0],
-                                }));
-                                setShowStartCalendar(false);
-                              }
-                            }}
-                          />
-                        </div>
-                      )}
-                    </div>
-                    {/* End Date */}
-                    <div className="space-y-2 relative" ref={endCalendarRef}>
-                      <Label htmlFor="end-date" className="font-ui">
-                        End Date
-                      </Label>
-                      <input
-                        id="end-date"
-                        ref={endInputRef}
-                        readOnly
-                        type="text"
-                        value={formatDisplayDate(dateRange.end)}
-                        onClick={() => setShowEndCalendar((v) => !v)}
-                        className="pl-10 font-body cursor-pointer w-full border border-gray-300 rounded-md h-10"
-                      />
-                      <CalendarIcon className="absolute left-3 top-[38px] h-4 w-4 text-muted-foreground pointer-events-none" />
-                      {showEndCalendar && (
-                        <div className="absolute z-10 mt-1 bg-white shadow-lg rounded-md">
-                          {/* <Calendar
-                            mode="single"
-                            selected={new Date(dateRange.end)}
-                            onSelect={(d) => {
-                              if (d) {
-                                setDateRange((prev) => ({
-                                  ...prev,
-                                  end: d.toISOString().split("T")[0],
-                                }));
-                                setShowEndCalendar(false);
-                              }
-                            }}
-                            to={new Date()}
-                          /> */}
-                          <Calendar
-                            selected={new Date(dateRange.end)}
-                            onSelect={(d) => {
-                              if (d) {
-                                setDateRange((prev) => ({
-                                  ...prev,
-                                  end: d.toISOString().split("T")[0],
-                                }));
-                                setShowEndCalendar(false);
-                              }
-                            }}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <DateRangePicker
+                    startDate={dateRange.start}
+                    endDate={dateRange.end}
+                    onStartDateChange={(date) => 
+                      setDateRange(prev => ({ ...prev, start: date }))
+                    }
+                    onEndDateChange={(date) => 
+                      setDateRange(prev => ({ ...prev, end: date }))
+                    }
+                  />
                 </CardContent>
               </Card>
 

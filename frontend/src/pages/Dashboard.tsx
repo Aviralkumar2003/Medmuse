@@ -1,17 +1,12 @@
 import { useEffect } from "react"
+import { Calendar, Activity, Target, Plus, Clock, FileText, TrendingUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Header } from "@/components/layout/Header"
-import { 
-  Plus, 
-  Calendar, 
-  TrendingUp, 
-  FileText, 
-  Activity,
-  Clock,
-  Target
-} from "lucide-react"
 import { Link } from "react-router-dom"
+import { StatsCard } from "@/components/dashboard/StatsCard"
+import { WelcomeSection } from "@/components/dashboard/WelcomeSection"
+import { QuickActionCard } from "@/components/dashboard/QuickActionCard"
+import { RecentEntriesCard } from "@/components/dashboard/RecentEntriesCard"
 import { useAppDispatch, useAppSelector } from "../hooks/redux"
 import { getUserSymptomEntries } from "../store/slices/symptomEntrySlice"
 import { generateWeeklyReport } from "../store/slices/reportSlice"
@@ -76,70 +71,21 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background-soft">
-      <Header />
-      
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Section */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-ui font-bold text-foreground mb-2">
-            Welcome back{user ? `, ${user.name.split(' ')[0]}` : ''}! 👋
-          </h1>
-          <p className="text-lg font-body text-muted-foreground">
-            Here's your health summary for today
-          </p>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="mb-8">
-          <Card className="bg-gradient-primary shadow-card border-0">
-            <CardContent className="p-6">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-xl font-ui font-semibold text-primary-foreground mb-2">
-                    Ready to log today's symptoms?
-                  </h2>
-                  <p className="text-primary-foreground/90 font-body">
-                    Keep your health tracking consistent
-                  </p>
-                </div>
-                <Button 
-                  variant="outline" 
-                  size="lg"
-                  className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 border-0"
-                  asChild
-                >
-                  <Link to="/log-symptoms">
-                    <Plus className="h-5 w-5 mr-2" />
-                    Log Symptoms
-                  </Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+      <main className="container mx-auto px-4 py-8">
+        <WelcomeSection userName={user?.name} />
+        <QuickActionCard />
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {stats.map((stat, index) => (
-            <Card key={index} className="shadow-card border-border">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-ui font-medium text-muted-foreground">
-                  {stat.title}
-                </CardTitle>
-                <stat.icon className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-ui font-bold text-foreground mb-1">
-                  {stat.value}
-                </div>
-                <p className="text-xs font-body text-muted-foreground">
-                  {stat.description}
-                </p>
-                <p className="text-xs font-body text-secondary mt-1">
-                  {stat.trend}
-                </p>
-              </CardContent>
-            </Card>
+            <StatsCard
+              key={index}
+              title={stat.title}
+              value={stat.value}
+              icon={stat.icon}
+              description={stat.description}
+              trend={stat.trend}
+            />
           ))}
         </div>
 

@@ -13,9 +13,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-// Shared Header
-import { Header } from "@/components/layout/Header";
-
 const ProfileDetails = () => {
   const { user } = useAppSelector((state) => state.auth);
 
@@ -50,7 +47,6 @@ const ProfileDetails = () => {
 
   return (
     <>
-      <Header showNavLinks={false} />
       <div className="container max-w-5xl mx-auto py-6 px-4 lg:py-12 flex flex-col lg:flex-row gap-8">
         {/* Sidebar */}
         <aside className="w-full lg:w-1/4 lg:border-r lg:border-border lg:pr-6">

@@ -1,7 +1,6 @@
 import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Header } from "@/components/layout/Header"
 import { Heart } from "lucide-react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { useAppDispatch, useAppSelector } from "../hooks/redux"
@@ -45,8 +44,6 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-background-soft">
-      <Header />
-      
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="max-w-md mx-auto">
           <div className="text-center mb-8">

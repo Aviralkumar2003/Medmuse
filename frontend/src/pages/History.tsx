@@ -1,21 +1,13 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Header } from "@/components/layout/Header"
+import { ChevronLeft, ChevronRight, TrendingDown, TrendingUp, Minus, Calendar } from "lucide-react"
 import { useAppDispatch, useAppSelector } from "@/hooks/redux"
 import { getUserSymptomEntries, clearError } from "@/store/slices/symptomEntrySlice"
 import { useToast } from "@/hooks/use-toast"
-import { 
-  Search, 
-  Filter, 
-  Calendar,
-  TrendingDown,
-  TrendingUp,
-  Minus,
-  ChevronLeft,
-  ChevronRight
-} from "lucide-react"
+import { PageHeader } from "@/components/shared/PageHeader"
+import { SearchFilters } from "@/components/history/SearchFilters"
+import { SymptomEntryCard } from "@/components/history/SymptomEntryCard"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 
 export default function History() {
   const dispatch = useAppDispatch()
@@ -53,6 +45,10 @@ export default function History() {
     setCurrentPage(page)
   }
 
+  const handleFilterClick = () => {
+    // TODO: Implement filter functionality
+  }
+
   const getSeverityColor = (severity: number) => {
     if (severity <= 3) return "text-secondary"
     if (severity <= 6) return "text-attention"
@@ -75,43 +71,18 @@ export default function History() {
 
   return (
     <div className="min-h-screen bg-background-soft">
-      <Header />
-      
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-ui font-bold text-foreground mb-2">
-              Symptom History
-            </h1>
-            <p className="text-lg font-body text-muted-foreground">
-              Review and track your symptom patterns over time
-            </p>
-          </div>
+          <PageHeader 
+            title="Symptom History" 
+            description="Review and track your symptom patterns over time"
+          />
 
-          {/* Search and Filters */}
-          <Card className="mb-8 shadow-card border-border">
-            <CardHeader>
-              <CardTitle className="font-ui text-foreground">Search & Filter</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search symptoms or notes..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 font-body"
-                  />
-                </div>
-                <Button variant="outline" className="sm:w-auto">
-                  <Filter className="h-4 w-4 mr-2" />
-                  More Filters
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <SearchFilters 
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            onFilterClick={handleFilterClick}
+          />
 
           {/* Loading State */}
           {isLoading && (
