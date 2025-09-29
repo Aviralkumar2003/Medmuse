@@ -261,8 +261,8 @@ export function DetailedLogging({
                     />
                   </div>
 
-                                     {/* Notes Section */}
-                   <div className="space-y-3">
+                    {/* Notes Section */}
+                   < div className="space-y-3">
                      <h5 className="text-sm font-medium">Additional Notes</h5>
                      <EnhancedNotesDetailed
                        value={symptom.notes}
