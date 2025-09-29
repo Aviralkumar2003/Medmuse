@@ -166,7 +166,6 @@ export const Header = () => {
                 </>
               ) : (
                 <div className="flex space-x-2 pt-4">
-                  <Button variant="outline" size="sm" className="flex-1" asChild><Link to="/login">Sign In</Link></Button>
                   <Button variant="medical" size="sm" className="flex-1" asChild><Link to="/signup">Get Started</Link></Button>
                 </div>
               )}

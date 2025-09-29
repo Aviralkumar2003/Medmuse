@@ -71,6 +71,8 @@ export default function History() {
     (entry.notes && entry.notes.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
+
+
   return (
     <div className="min-h-screen bg-background-soft">
       <Header />
@@ -241,7 +243,7 @@ export default function History() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
                   <div>
                     <div className="text-2xl font-ui font-bold text-foreground">
-                      {paginatedEntries?.totalElements || filteredEntries.length}
+                      { filteredEntries.length }
                     </div>
                     <div className="text-sm font-body text-muted-foreground">
                       Total Entries
