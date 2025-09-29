@@ -14,6 +14,7 @@ import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import { useAppSelector } from "./hooks/redux";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import ProfileDetails from "./pages/ProfileDetails";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ const App = () => {
               <Route path="/log-symptoms" element={<ProtectedRoute><LogSymptoms /></ProtectedRoute>} />
               <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
               <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><ProfileDetails/></ProtectedRoute>}/>
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

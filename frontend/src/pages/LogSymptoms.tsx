@@ -152,6 +152,7 @@ export default function LogSymptoms() {
 
   // Save symptom entries
   const handleSaveAll = async () => {
+    console.log(symptoms)
     if (symptoms.length === 0) {
       toast({
         title: "No Symptoms",
@@ -291,14 +292,7 @@ export default function LogSymptoms() {
             </CardContent>
           </Card>
 
-          {/* Symptom List */}
-          <SymptomList
-            symptoms={symptoms}
-            onSymptomClick={handleSymptomClick}
-            onRemoveSymptom={handleSymptomRemove}
-            onConvertSymptom={handleConvertSymptom}
-            selectedSymptomId={selectedSymptomId}
-          />
+          
 
           {/* Tabs */}
           <Tabs
@@ -353,6 +347,15 @@ export default function LogSymptoms() {
               />
             </TabsContent>
           </Tabs>
+
+          {/* Symptom List */}
+          <SymptomList
+            symptoms={symptoms}
+            onSymptomClick={handleSymptomClick}
+            onRemoveSymptom={handleSymptomRemove}
+            onConvertSymptom={handleConvertSymptom}
+            selectedSymptomId={selectedSymptomId}
+          />
 
           {/* Save Button */}
           {symptoms.length > 0 && (
