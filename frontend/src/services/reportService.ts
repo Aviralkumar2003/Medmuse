@@ -47,7 +47,11 @@ export const reportService = {
 
   // Generate custom date range report
   generateCustomReport: async (params: CustomReportParams): Promise<Report> => {
-    const response = await api.post('/api/reports/generate/custom', null, { params });
+    // Ensure dates are in YYYY-MM-DD format
+    const formattedStartDate = new Date(params.startDate).toISOString().split('T')[0];
+    const formattedEndDate = new Date(params.endDate).toISOString().split('T')[0];
+    
+    const response = await api.post(`/api/reports/generate/custom?startDate=${formattedStartDate}&endDate=${formattedEndDate}`);
     return response.data;
   },
 

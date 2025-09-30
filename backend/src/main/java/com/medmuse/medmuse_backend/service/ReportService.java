@@ -65,7 +65,7 @@ public class ReportService implements ReportServiceInterface {
         List<SymptomEntryDto> symptomEntries = symptomService.getUserSymptomEntriesByDateRange(userId, startDate, endDate);
         
         if (symptomEntries.isEmpty()) {
-            throw new RuntimeException("Insufficient data for operation: at least 3 days of symptom entries");
+            throw new RuntimeException("No symptom entries found for the selected date range. Please choose a period with recorded symptoms.");
         }
         
         HealthAnalysisRequest analysisRequest = new HealthAnalysisRequest(userId, demographics, startDate, endDate, symptomEntries);

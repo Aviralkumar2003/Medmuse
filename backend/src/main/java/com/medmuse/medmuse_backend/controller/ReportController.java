@@ -60,7 +60,10 @@ public class ReportController {
         
         return reportService.generateReportForPeriod(user.getId(), startDate, endDate)
             .thenApply(report -> ResponseEntity.status(HttpStatus.CREATED).body(report))
-            .exceptionally(ex -> ResponseEntity.badRequest().build());
+            .exceptionally(ex -> {
+                String errorMessage = ex.getCause().getMessage();
+                throw new RuntimeException(errorMessage);
+            });
     }
     
     @GetMapping("/my")

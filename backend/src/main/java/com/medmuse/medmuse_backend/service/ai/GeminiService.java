@@ -1,10 +1,10 @@
 package com.medmuse.medmuse_backend.service.ai;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import org.springframework.beans.factory.annotation.Value;
+import jakarta.annotation.PostConstruct;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -18,25 +18,40 @@ import com.medmuse.medmuse_backend.dto.HealthAnalysisRequest;
 import com.medmuse.medmuse_backend.dto.HealthAnalysisResponse;
 
 @Service
-public class OpenAIService implements AIService {
+public class GeminiService implements AIService {
     
-    @Value("${medmuse.ai.openai.api-key}")
+    @Value("${medmuse.ai.gemini.api-key}")
     private String apiKey;
     
-    @Value("${medmuse.ai.openai.model:gpt-4}")
+    @Value("${medmuse.ai.gemini.model}")
     private String model;
     
-    @Value("${medmuse.ai.openai.endpoint}")
+    @Value("${medmuse.ai.gemini.endpoint}")
     private String endpoint;
     
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
     
-    public OpenAIService() {
+    public GeminiService() {
         this.webClient = WebClient.builder()
             .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
             .build();
         this.objectMapper = new ObjectMapper();
+    }
+    
+    @PostConstruct
+    public void init() {
+        System.out.println("Initializing GeminiService...");
+        if (apiKey == null || apiKey.isEmpty()) {
+            System.out.println("Warning: Gemini API key is not set");
+        }
+        if (model == null || model.isEmpty()) {
+            System.out.println("Warning: Gemini model is not set");
+        }
+        if (endpoint == null || endpoint.isEmpty()) {
+            System.out.println("Warning: Gemini endpoint is not set");
+        }
+        System.out.println("GeminiService initialization complete.");
     }
     
     @Override
@@ -44,10 +59,10 @@ public class OpenAIService implements AIService {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 String prompt = buildAnalysisPrompt(request);
-                String response = callOpenAI(prompt);
-                return parseOpenAIResponse(response);
+                String response = callGemini(prompt);
+                return parseGeminiResponse(response);
             } catch (Exception e) {
-                throw new RuntimeException("OpenAI service failed: " + e.getMessage(), e);
+                throw new RuntimeException("Gemini service failed: " + e.getMessage(), e);
             }
         });
     }
@@ -55,17 +70,30 @@ public class OpenAIService implements AIService {
     @Override
     public boolean isServiceAvailable() {
         try {
+            System.out.println("Checking Gemini service availability...");
+            System.out.println("API Key: " + (apiKey != null ? "present" : "null"));
+            System.out.println("Model: " + model);
+            System.out.println("Endpoint: " + endpoint);
+            
+            if (apiKey == null || apiKey.isEmpty()) {
+                System.out.println("Gemini service unavailable: Missing API key");
+                return false;
+            }
+            
             String testPrompt = "Respond with 'OK' if you're available.";
-            String response = callOpenAI(testPrompt);
+            String response = callGemini(testPrompt);
+            System.out.println("Gemini service test response: " + response);
             return response.contains("OK");
         } catch (Exception e) {
+            System.out.println("Gemini service availability check failed: " + e.getMessage());
+            e.printStackTrace();
             return false;
         }
     }
     
     @Override
     public String getProviderName() {
-        return "openai";
+        return AIProvider.GEMINI.getProviderName();
     }
     
     private String buildAnalysisPrompt(HealthAnalysisRequest request) {
@@ -98,32 +126,52 @@ public class OpenAIService implements AIService {
         return prompt.toString();
     }
     
-    private String callOpenAI(String prompt) {
+    private String callGemini(String prompt) {
         Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", model);
-        requestBody.put("messages", Arrays.asList(
-            Map.of("role", "user", "content", prompt)
+        
+        // Gemini API request format
+        Map<String, Object> contents = new HashMap<>();
+        contents.put("role", "user");
+        contents.put("parts", new Object[]{
+            Map.of("text", prompt)
+        });
+        
+        requestBody.put("contents", new Object[]{contents});
+        requestBody.put("generationConfig", Map.of(
+            "temperature", 0.7,
+            "maxOutputTokens", 1500,
+            "model", model
         ));
-        requestBody.put("max_tokens", 1500);
-        requestBody.put("temperature", 0.7);
         
         try {
-            return webClient.post()
-                .uri(endpoint)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
+            String fullEndpoint = endpoint + model + ":generateContent?key=" + apiKey;
+            System.out.println("Calling Gemini API at: " + fullEndpoint.replaceAll(apiKey, "API_KEY_HIDDEN"));
+            System.out.println("Request body: " + objectMapper.writeValueAsString(requestBody));
+            
+            String response = webClient.post()
+                .uri(fullEndpoint)
                 .bodyValue(requestBody)
                 .retrieve()
                 .bodyToMono(String.class)
                 .block();
+                
+            System.out.println("Gemini API response: " + response);
+            return response;
         } catch (WebClientResponseException e) {
-            throw new RuntimeException("OpenAI API call failed: " + e.getResponseBodyAsString(), e);
+            System.out.println("Gemini API call failed with status " + e.getStatusCode());
+            System.out.println("Response body: " + e.getResponseBodyAsString());
+            throw new RuntimeException("Gemini API call failed: " + e.getResponseBodyAsString(), e);
+        } catch (Exception e) {
+            System.out.println("Unexpected error calling Gemini API: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Gemini API call failed: " + e.getMessage(), e);
         }
     }
     
-    private HealthAnalysisResponse parseOpenAIResponse(String response) {
+    private HealthAnalysisResponse parseGeminiResponse(String response) {
         try {
             JsonNode root = objectMapper.readTree(response);
-            String content = root.path("choices").get(0).path("message").path("content").asText();
+            String content = root.path("candidates").get(0).path("content").path("parts").get(0).path("text").asText();
             
             try {
                 JsonNode contentJson = objectMapper.readTree(content);
@@ -137,7 +185,7 @@ public class OpenAIService implements AIService {
                 return parseTextResponse(content);
             }
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to parse OpenAI response", e);
+            throw new RuntimeException("Failed to parse Gemini response", e);
         }
     }
     
@@ -145,8 +193,8 @@ public class OpenAIService implements AIService {
         String[] sections = content.split("(?i)(HEALTH_SUMMARY|RISK_AREAS|RECOMMENDATIONS):");
         
         String healthSummary = sections.length > 1 ? sections[1].trim() : "Analysis completed";
-        String riskAreas = sections.length > 2 ? sections[1].trim() : "No specific risk areas identified";
-        String recommendations = sections.length > 3 ? sections[2].trim() : "Continue monitoring symptoms";
+        String riskAreas = sections.length > 2 ? sections[2].trim() : "No specific risk areas identified";
+        String recommendations = sections.length > 3 ? sections[3].trim() : "Continue monitoring symptoms";
         
         return new HealthAnalysisResponse(healthSummary, riskAreas, recommendations, getProviderName());
     }

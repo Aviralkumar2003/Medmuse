@@ -8,13 +8,13 @@ import com.medmuse.medmuse_backend.dto.HealthAnalysisRequest;
 import com.medmuse.medmuse_backend.dto.HealthAnalysisResponse;
 import com.medmuse.medmuse_backend.service.ai.AIServiceFactory;
 
-@Component
 public class AIReportGenerationStrategy implements ReportGenerationStrategy {
     
     private final AIServiceFactory aiServiceFactory;
     
     public AIReportGenerationStrategy(AIServiceFactory aiServiceFactory) {
         this.aiServiceFactory = aiServiceFactory;
+        System.out.println("AIReportGenerationStrategy initialized with aiServiceFactory: " + aiServiceFactory);
     }
     
     @Override

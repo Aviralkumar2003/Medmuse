@@ -148,8 +148,7 @@ export default function Reports() {
   };
 
   const generateReport = async () => {
-    setIsGeneratingReport(true); //old //new change
-    // setIsGeneratingCustom(true); //  only affect custom button //old
+    setIsGeneratingReport(true);
     try {
       await dispatch(
         generateCustomReport({
@@ -162,7 +161,12 @@ export default function Reports() {
         description: "Your health report has been generated successfully!",
       });
       dispatch(getUserReports());
-    } catch {
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate report",
+        variant: "destructive"
+      });
     } finally {
       setIsGeneratingReport(false); //old //new change
       // setIsGeneratingCustom(false); // only reset custom //old
