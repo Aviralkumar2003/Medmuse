@@ -72,7 +72,13 @@ public class OpenAIService implements AIService {
         StringBuilder prompt = new StringBuilder();
         prompt.append("You are a healthcare analytics AI assistant. Analyze the following symptom data and provide insights.\n\n");
         prompt.append("IMPORTANT: Do not provide medical diagnosis or treatment advice. Focus on general health patterns and lifestyle recommendations.\n\n");
-        
+        prompt.append("Client Demographics:\n");
+        prompt.append(String.format("- Age: %d\n", request.getUserDemographics().getAge()));
+        prompt.append(String.format("- Gender: %s\n", request.getUserDemographics().getGender()));
+        prompt.append(String.format("- Weight: %.1f kg\n", request.getUserDemographics().getWeight()));
+        prompt.append(String.format("- Height: %s\n", request.getUserDemographics().getHeight()));
+        prompt.append(String.format("- Nationality: %s\n\n", request.getUserDemographics().getNationality()));
+
         prompt.append("Symptom Data:\n");
         request.getSymptomEntries().forEach(entry -> {
             prompt.append(String.format("- %s: Severity %d/10 on %s", 

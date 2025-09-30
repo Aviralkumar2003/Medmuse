@@ -16,6 +16,7 @@ import com.medmuse.medmuse_backend.dto.ReportDto;
 import com.medmuse.medmuse_backend.dto.SymptomEntryDto;
 import com.medmuse.medmuse_backend.entity.Report;
 import com.medmuse.medmuse_backend.entity.User;
+import com.medmuse.medmuse_backend.entity.UserDemographics;
 import com.medmuse.medmuse_backend.repository.ReportRepository;
 import com.medmuse.medmuse_backend.repository.UserRepository;
 import com.medmuse.medmuse_backend.service.factory.StrategyFactory;
@@ -58,6 +59,8 @@ public class ReportService implements ReportServiceInterface {
     public CompletableFuture<ReportDto> generateReportForPeriod(Long userId, LocalDate startDate, LocalDate endDate) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+
+        UserDemographics demographics = user.getDemographics();
         
         List<SymptomEntryDto> symptomEntries = symptomService.getUserSymptomEntriesByDateRange(userId, startDate, endDate);
         
@@ -65,7 +68,7 @@ public class ReportService implements ReportServiceInterface {
             throw new RuntimeException("Insufficient data for operation: at least 3 days of symptom entries");
         }
         
-        HealthAnalysisRequest analysisRequest = new HealthAnalysisRequest(userId, startDate, endDate, symptomEntries);
+        HealthAnalysisRequest analysisRequest = new HealthAnalysisRequest(userId, demographics, startDate, endDate, symptomEntries);
         
         ReportGenerationStrategy reportStrategy = strategyFactory.getReportGenerationStrategy("AI_ANALYSIS");
         
