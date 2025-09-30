@@ -28,9 +28,9 @@ export const Header: React.FC<{ showNavLinks?: boolean }> = ({
     }
   }, [user, isLoading, dispatch]);
 
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate("/login");
+  const handleLogout = async () => {
+    await dispatch(logout());
+    // No need to navigate here as authService.logout will handle the redirect
   };
 
   const getUserInitials = (name?: string) => {

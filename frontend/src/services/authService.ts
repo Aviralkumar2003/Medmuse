@@ -34,9 +34,19 @@ export const authService = {
     window.location.href = `${baseUrl}/api/oauth2/authorization/google`;
   },
 
-  // Logout (just redirect to backend logout)
-  logout: () => { 
+  // Logout - call logout endpoint and redirect to homepage
+  logout: async () => { 
     const baseUrl = import.meta.env.VITE_API_BASE_URL;
-    window.location.href = `${baseUrl}/api/logout`;
+    try {
+      await fetch(`${baseUrl}/api/logout`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      // Always redirect to homepage after logout attempt
+      window.location.href = '/';
+    }
   },
 };

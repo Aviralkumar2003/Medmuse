@@ -46,9 +46,11 @@ const authSlice = createSlice({
       authService.initiateGoogleLogin();
     },
     logout: (state) => {
-      authService.logout();
       state.user = null;
       state.error = null;
+      state.isLoading = false;
+      // The actual logout and redirect is handled by authService.logout()
+      authService.logout();
     },
     clearError: (state) => {
       state.error = null;
