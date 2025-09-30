@@ -9,11 +9,13 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.medmuse.medmuse_backend.dto.UserDto;
+import com.medmuse.medmuse_backend.dto.UserDemographicsDto;
 import com.medmuse.medmuse_backend.service.interfaces.UserServiceInterface;
 import com.medmuse.medmuse_backend.util.UserContext;
 
@@ -60,4 +62,31 @@ public class UserController {
             return ResponseEntity.notFound().build();
         }
     }
+
+
+    @PostMapping("/updateUserDemographics")
+    public ResponseEntity<UserDemographicsDto> updateUserDemographics(@AuthenticationPrincipal OidcUser principal,
+                                                 @RequestBody Map<String, Object> demographics) {
+        System.out.println("Received demographics: " + demographics);
+        
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        try {
+            UserDto currentUser = UserContext.getCurrentUser(principal, userService);
+            System.out.println(currentUser);
+            System.out.println("----------------------------------------");
+            if(!demographics.isEmpty()) {
+                System.out.println("In If Block");
+                 UserDemographicsDto userDemographics=userService
+                                .updateUserDemographics(currentUser.getId(), demographics);
+                System.out.println("Updated demographics: " + userDemographics);
+                return ResponseEntity.ok(userDemographics);
+            }
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    } 
+
 }

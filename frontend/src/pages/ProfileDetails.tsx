@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { useAppSelector } from "../hooks/redux";
+import { useAppDispatch, useAppSelector } from "../hooks/redux";
+import { useToast } from "../hooks/use-toast";
+import { updateUserDemographics } from "../store/slices/authSlice";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -34,16 +36,75 @@ const ProfileDetails = () => {
       .catch((err) => console.error("Error fetching countries:", err));
   }, []);
 
+  const dispatch = useAppDispatch();
+  const { toast } = useToast();
+  const { isLoading, error } = useAppSelector((state) => state.auth);
+
   const [form, setForm] = useState({
-    age: "",
-    weight: "",
+    age: user?.demographics?.age?.toString() ?? "",
+    weight: user?.demographics?.weight?.toString() ?? "",
     heightUnit: "cm", // "cm" | "ft-in"
-    heightCm: "",
+    heightCm: user?.demographics?.height ?? "",
     heightFt: "",
     heightIn: "",
-    gender: "",
-    nationality: "",
+    gender: user?.demographics?.gender ?? "",
+    nationality: user?.demographics?.nationality ?? "",
   });
+
+  // Handler for resetting form to original values
+  const handleCancel = () => {
+    setForm({
+      age: user?.demographics?.age?.toString() ?? "",
+      weight: user?.demographics?.weight?.toString() ?? "",
+      heightUnit: "cm",
+      heightCm: user?.demographics?.height ?? "",
+      heightFt: "",
+      heightIn: "",
+      gender: user?.demographics?.gender ?? "",
+      nationality: user?.demographics?.nationality ?? "",
+    });
+  };
+
+  // Handler for saving demographics changes
+  const handleSave = async () => {
+    // Basic validation
+    if (!form.age || !form.gender || !form.weight) {
+      toast({
+        title: "Missing Fields",
+        description: "Please fill in required fields: age, gender, and weight.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Convert height to cm string format if using ft/in
+    let height = form.heightCm;
+    if (form.heightUnit === "ft-in" && form.heightFt && form.heightIn) {
+      const totalInches = (parseFloat(form.heightFt) * 12) + parseFloat(form.heightIn);
+      height = (totalInches * 2.54).toFixed(1);
+    }
+
+    try {
+      await dispatch(updateUserDemographics({
+        age: parseInt(form.age),
+        gender: form.gender,
+        weight: parseFloat(form.weight),
+        height: height,
+        nationality: form.nationality
+      })).unwrap();
+
+      toast({
+        title: "Success",
+        description: "Demographics updated successfully",
+      });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to update demographics",
+        variant: "destructive"
+      });
+    }
+  };
 
   return (
     <>
@@ -298,11 +359,24 @@ const ProfileDetails = () => {
 
           {/* Save / Cancel Buttons */}
           <div className="flex flex-col sm:flex-row justify-end gap-3">
-            <Button variant="outline" className="w-full sm:w-auto">
+            <Button 
+              variant="outline" 
+              className="w-full sm:w-auto"
+              onClick={handleCancel}
+            >
               Cancel
             </Button>
-            <Button className="w-full sm:w-auto">Save Changes</Button>
+            <Button 
+              className="w-full sm:w-auto"
+              onClick={handleSave}
+              disabled={isLoading}
+            >
+              {isLoading ? "Saving..." : "Save Changes"}
+            </Button>
           </div>
+          {error && (
+            <p className="text-sm text-destructive mt-2">{error}</p>
+          )}
         </div>
       </div>
     </>

@@ -13,14 +13,10 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, isLoading } = useAppSelector((state) => state.auth);
 
   useEffect(() => {
-    console.log('[ProtectedRoute] user:', user, 'isLoading:', isLoading);
     if (!user && !isLoading) {
-      console.log('[ProtectedRoute] Dispatching getCurrentUser');
       dispatch(getCurrentUser());
     }
   }, [user, isLoading, dispatch]);
-
-  console.log('[ProtectedRoute] FINAL user:', user, 'isLoading:', isLoading);
 
   if (isLoading) {
     return (

@@ -27,27 +27,26 @@ export default function LogSymptoms() {
     (state) => state.symptomEntries
   );
 
-  // States
   const [date, setDate] = useState(new Date());
-  const [time, setTime] = useState(new Date().toTimeString().slice(0, 5)); // "HH:mm"
+  const [time, setTime] = useState(new Date().toTimeString().slice(0, 5));
 
   const [symptoms, setSymptoms] = useState<UnifiedSymptom[]>([]);
-  const [selectedSymptomId, setSelectedSymptomId] = useState<string | null>(
-    null
-  );
+  const [selectedSymptomId, setSelectedSymptomId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("quick");
 
-  // Format date for display and ISO for backend
   const formattedDate = date.toLocaleDateString("en-US");
   const formattedDateISO = date.toISOString().split("T")[0];
 
 
   useEffect(() => {
-    dispatch(getAllSymptoms());
+    // Only fetch symptoms if they're not already loaded
+    if (!availableSymptoms || availableSymptoms.length === 0) {
+      dispatch(getAllSymptoms());
+    }
     return () => {
       dispatch(clearError());
     };
-  }, [dispatch]);
+  }, [dispatch, availableSymptoms]);
 
   useEffect(() => {
     if (error) {
@@ -60,7 +59,7 @@ export default function LogSymptoms() {
     }
   }, [error, toast, dispatch]);
 
-  // Symptom handlers
+ 
   const handleSymptomAdd = (symptom: UnifiedSymptom) => {
     setSymptoms((prev) => [...prev, symptom]);
   };
@@ -125,9 +124,7 @@ export default function LogSymptoms() {
         } logged successfully!`,
       });
       navigate("/dashboard");
-    } catch {
-      // error handled in useEffect
-    }
+    } catch {}
   };
 
   return (

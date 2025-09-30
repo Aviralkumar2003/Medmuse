@@ -74,9 +74,13 @@ const symptomSlice = createSlice({
       })
       .addCase(getAllSymptoms.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.symptoms = action.payload;
-        // Extract unique categories
-        state.categories = [...new Set(action.payload.map(symptom => symptom.category))];
+        // Ensure payload is an array and not empty
+        const symptoms = Array.isArray(action.payload) ? action.payload : [];
+        if (symptoms.length > 0) {
+          state.symptoms = symptoms;
+          // Extract unique categories
+          state.categories = [...new Set(symptoms.map(symptom => symptom.category))];
+        }
         state.error = null;
       })
       .addCase(getAllSymptoms.rejected, (state, action) => {
@@ -90,7 +94,7 @@ const symptomSlice = createSlice({
       })
       .addCase(getSymptomsByCategory.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.searchResults = action.payload;
+        state.searchResults = Array.isArray(action.payload) ? action.payload : [];
         state.error = null;
       })
       .addCase(getSymptomsByCategory.rejected, (state, action) => {
@@ -104,7 +108,7 @@ const symptomSlice = createSlice({
       })
       .addCase(searchSymptoms.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.searchResults = action.payload;
+        state.searchResults = Array.isArray(action.payload) ? action.payload : [];
         state.error = null;
       })
       .addCase(searchSymptoms.rejected, (state, action) => {

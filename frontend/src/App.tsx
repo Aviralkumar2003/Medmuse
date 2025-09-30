@@ -22,7 +22,6 @@ const queryClient = new QueryClient();
 const App = () => {
   const user = useAppSelector((state) => state.auth.user);
   
-  console.log('[App] Redux user:', user);
   return (
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>

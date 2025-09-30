@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { authService, User, UpdateUserRequest } from '../../services/authService';
+import { authService, User, UpdateUserRequest, UpdateDemographicsRequest, UserDemographics } from '../../services/authService';
 
 interface AuthState {
   user: User | null;
@@ -38,6 +38,18 @@ export const updateUserProfile = createAsyncThunk(
   }
 );
 
+export const updateUserDemographics = createAsyncThunk(
+  'auth/updateUserDemographics',
+  async (data: UpdateDemographicsRequest, { rejectWithValue }) => {
+    try {
+      const demographics = await authService.updateUserDemographics(data);
+      return demographics;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to update demographics');
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -67,7 +79,6 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.user = action.payload;
         state.error = null;
-        console.log('[authSlice] getCurrentUser.fulfilled:', action.payload);
       })
       .addCase(getCurrentUser.rejected, (state, action) => {
         state.isLoading = false;
@@ -86,6 +97,22 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(updateUserProfile.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      // Update user demographics
+      .addCase(updateUserDemographics.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(updateUserDemographics.fulfilled, (state, action) => {
+        state.isLoading = false;
+        if (state.user) {
+          state.user.demographics = action.payload;
+        }
+        state.error = null;
+      })
+      .addCase(updateUserDemographics.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       });

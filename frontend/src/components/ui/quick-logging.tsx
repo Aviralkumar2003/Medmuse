@@ -108,7 +108,7 @@ export function QuickLogging({
               placeholder="Type a symptom..."
               value={newSymptom}
               onChange={(e) => setNewSymptom(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && addSymptomByName(newSymptom)}
+              onKeyUp={(e) => e.key === 'Enter' && addSymptomByName(newSymptom)}
             />
             <Button
               onClick={() => addSymptomByName(newSymptom)}

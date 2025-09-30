@@ -1,5 +1,13 @@
 import api from './api';
 
+export interface UserDemographics {
+  age: number;
+  gender: string;
+  weight: number;
+  height: string;
+  nationality: string;
+}
+
 export interface User {
   id: number;
   googleId: string;
@@ -7,10 +15,19 @@ export interface User {
   name: string;
   profilePicture: string;
   createdAt: string;
+  demographics?: UserDemographics;
 }
 
 export interface UpdateUserRequest {
   name: string;
+}
+
+export interface UpdateDemographicsRequest {
+  age: number;
+  gender: string;
+  weight: number;
+  height: string;
+  nationality: string;
 }
 
 export const authService = {
@@ -18,7 +35,15 @@ export const authService = {
   // Get current user profile
   getCurrentUser: async (): Promise<User> => {
     const response = await api.get('/api/users/me');
-    console.log('[authService] /api/users/me response:', response);
+    return response.data;
+  },
+
+  // Update user demographics
+  updateUserDemographics: async (data: UpdateDemographicsRequest): Promise<UserDemographics> => {
+    console.log("Making Api Call");
+    console.log(data);
+    const response = await api.post('/api/users/updateUserDemographics', data);
+    console.log('[authService] /api/users/updateUserDemographics response:', response);
     return response.data;
   },
 

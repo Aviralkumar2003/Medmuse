@@ -15,8 +15,6 @@ export default function Login() {
   const { user, isLoading, error } = useAppSelector((state) => state.auth);
   const { toast } = useToast()
 
-  console.log('[Login] Redux user:', user);
-
   const from = location.state?.from?.pathname || '/dashboard'
 
   useEffect(() => {
