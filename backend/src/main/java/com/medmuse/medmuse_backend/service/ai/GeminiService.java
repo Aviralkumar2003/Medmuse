@@ -6,20 +6,13 @@ import com.medmuse.medmuse_backend.dto.SymptomEntryDto;
 
 import lombok.extern.slf4j.Slf4j;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,41 +29,34 @@ public class GeminiService implements AIServiceInterface {
     private String model;
 
     private final RestTemplate restTemplate = new RestTemplate();
-    private final ExecutorService executor = Executors.newCachedThreadPool();
 
     @Override
-    public CompletableFuture<HealthAnalysisResponse> analyzeHealthData(HealthAnalysisRequest request) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                if (request == null || request.getUserDemographics() == null)
-                    throw new RuntimeException("HealthAnalysisRequest or demographics missing");
+    public HealthAnalysisResponse analyzeHealthData(HealthAnalysisRequest request) {
 
-                String prompt = buildPrompt(request);
+        if (request == null || request.getUserDemographics() == null) {
+            throw new RuntimeException("HealthAnalysisRequest or demographics missing");
+        }
 
-                HttpHeaders headers = new HttpHeaders();
-                headers.setContentType(MediaType.APPLICATION_JSON);
-                headers.setBearerAuth(apiKey);
+        String prompt = buildPrompt(request);
 
-                Map<String, Object> body = Map.of(
-                        "model", model,
-                        "input", List.of(Map.of("text", prompt))
-                );
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(apiKey);
 
-                ResponseEntity<Map> response = restTemplate.postForEntity(endpoint, new HttpEntity<>(body, headers), Map.class);
-                String aiText = extractTextFromResponse(response.getBody());
+        Map<String, Object> body = Map.of(
+                "model", model,
+                "input", List.of(Map.of("text", prompt))
+        );
 
-                return new HealthAnalysisResponse(
-                        extractSection(aiText, "Summary"),
-                        extractSection(aiText, "Risks"),
-                        extractSection(aiText, "Recommendations"),
-                        "Gemini"
-                );
+        ResponseEntity<Map> response = restTemplate.postForEntity(endpoint, new HttpEntity<>(body, headers), Map.class);
+        String aiText = extractTextFromResponse(response.getBody());
 
-            } catch (Exception e) {
-                log.error("GeminiService error", e);
-                throw new RuntimeException("GeminiService error: " + e.getMessage(), e);
-            }
-        }, executor);
+        return new HealthAnalysisResponse(
+                extractSection(aiText, "Summary"),
+                extractSection(aiText, "Risks"),
+                extractSection(aiText, "Recommendations"),
+                "Gemini"
+        );
     }
 
     private String buildPrompt(HealthAnalysisRequest request) {
@@ -104,16 +90,22 @@ public class GeminiService implements AIServiceInterface {
             if (!candidates.isEmpty()) {
                 Map<?, ?> candidate = (Map<?, ?>) candidates.get(0);
                 Map<?, ?> content = (Map<?, ?>) candidate.get("content");
-                if (content != null && content.containsKey("text")) return content.get("text").toString();
+                if (content != null && content.containsKey("text")) {
+                    return content.get("text").toString();
+                }
             }
         }
         return "";
     }
 
     private String extractSection(String text, String sectionName) {
-        if (text == null || text.isBlank()) return "";
+        if (text == null || text.isBlank()) {
+            return "";
+        }
         String[] parts = text.split("(?i)" + sectionName + ":"); // Case-insensitive split
-        if (parts.length < 2) return "";
+        if (parts.length < 2) {
+            return "";
+        }
         String section = parts[1].trim();
         int end = section.indexOf("\n\n"); // Stop at next empty line
         return end > 0 ? section.substring(0, end).trim() : section;
