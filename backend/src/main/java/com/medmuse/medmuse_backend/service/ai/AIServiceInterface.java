@@ -1,12 +1,10 @@
-package com.medmuse.medmuse_backend.service.strategy;
-
-import java.util.concurrent.CompletableFuture;
+package com.medmuse.medmuse_backend.service.ai;
 
 import com.medmuse.medmuse_backend.dto.HealthAnalysisRequest;
 import com.medmuse.medmuse_backend.dto.HealthAnalysisResponse;
 
-public interface ReportGenerationStrategy {
+import java.util.concurrent.CompletableFuture;
+
+public interface AIServiceInterface {
     CompletableFuture<HealthAnalysisResponse> analyzeHealthData(HealthAnalysisRequest request);
-    String getStrategyName();
-    boolean isAvailable();
 }

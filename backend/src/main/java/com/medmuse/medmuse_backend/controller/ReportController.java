@@ -1,10 +1,12 @@
 package com.medmuse.medmuse_backend.controller;
+
 import java.time.LocalDate;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -30,49 +32,49 @@ import com.medmuse.medmuse_backend.util.UserContext;
 @RequestMapping("/reports")
 @CrossOrigin(origins = "${medmuse.cors.allowed-origins}")
 public class ReportController {
-    
+
     private final ReportServiceInterface reportService;
     private final UserServiceInterface userService;
-    
+
     public ReportController(ReportServiceInterface reportService, UserServiceInterface userService) {
         this.reportService = reportService;
         this.userService = userService;
     }
-    
+
     @PostMapping("/generate")
     public CompletableFuture<ResponseEntity<ReportDto>> generateWeeklyReport(
             @AuthenticationPrincipal OidcUser principal) {
-        
+
         UserDto user = UserContext.getCurrentUser(principal, userService);
-        
+
         return reportService.generateWeeklyReport(user.getId())
-            .thenApply(report -> ResponseEntity.status(HttpStatus.CREATED).body(report))
-            .exceptionally(ex -> ResponseEntity.badRequest().build());
+                .thenApply(report -> ResponseEntity.status(HttpStatus.CREATED).body(report))
+                .exceptionally(ex -> ResponseEntity.badRequest().build());
     }
-    
+
     @PostMapping("/generate/custom")
     public CompletableFuture<ResponseEntity<ReportDto>> generateCustomReport(
             @AuthenticationPrincipal OidcUser principal,
-            @RequestParam LocalDate startDate,
-            @RequestParam LocalDate endDate) {
-        
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
         UserDto user = UserContext.getCurrentUser(principal, userService);
-        
+
         return reportService.generateReportForPeriod(user.getId(), startDate, endDate)
-            .thenApply(report -> ResponseEntity.status(HttpStatus.CREATED).body(report))
-            .exceptionally(ex -> {
-                String errorMessage = ex.getCause().getMessage();
-                throw new RuntimeException(errorMessage);
-            });
+                .thenApply(report -> ResponseEntity.status(HttpStatus.CREATED).body(report))
+                .exceptionally(ex -> {
+                    System.out.println("❌ Error generating custom report");
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+                });
     }
-    
+
     @GetMapping("/my")
     public ResponseEntity<List<ReportDto>> getUserReports(@AuthenticationPrincipal OidcUser principal) {
         UserDto user = UserContext.getCurrentUser(principal, userService);
         List<ReportDto> reports = reportService.getUserReports(user.getId());
         return ResponseEntity.ok(reports);
     }
-    
+
     @GetMapping("/my/paginated")
     public ResponseEntity<Page<ReportDto>> getUserReportsPaginated(
             @AuthenticationPrincipal OidcUser principal,
@@ -81,38 +83,38 @@ public class ReportController {
         Page<ReportDto> reports = reportService.getUserReports(user.getId(), pageable);
         return ResponseEntity.ok(reports);
     }
-    
+
     @GetMapping("/{reportId}")
     public ResponseEntity<ReportDto> getReport(
             @AuthenticationPrincipal OidcUser principal,
             @PathVariable Long reportId) {
-        
+
         UserDto user = UserContext.getCurrentUser(principal, userService);
         ReportDto report = reportService.getReportById(user.getId(), reportId);
         return ResponseEntity.ok(report);
     }
-    
+
     @GetMapping("/{reportId}/pdf")
     public ResponseEntity<byte[]> getReportPdf(
             @AuthenticationPrincipal OidcUser principal,
             @PathVariable Long reportId) {
-        
+
         UserDto user = UserContext.getCurrentUser(principal, userService);
         byte[] pdfBytes = reportService.getReportPdf(user.getId(), reportId);
-        
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
         headers.setContentDispositionFormData("attachment", "health-report-" + reportId + ".pdf");
         headers.setContentLength(pdfBytes.length);
-        
+
         return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
     }
-    
+
     @DeleteMapping("/{reportId}")
     public ResponseEntity<Void> deleteReport(
             @AuthenticationPrincipal OidcUser principal,
             @PathVariable Long reportId) {
-        
+
         UserDto user = UserContext.getCurrentUser(principal, userService);
         reportService.deleteReport(user.getId(), reportId);
         return ResponseEntity.noContent().build();

@@ -13,7 +13,7 @@ import com.medmuse.medmuse_backend.entity.Report;
 
 @Repository
 public interface ReportRepository extends JpaRepository<Report, Long> {
-    List<Report> findByUserIdOrderByGeneratedAtDesc(Long userId);
-    Page<Report> findByUserIdOrderByGeneratedAtDesc(Long userId, Pageable pageable);
-    Optional<Report> findByIdAndUserId(Long reportId, Long userId);
+    List<Report> findByUserId(Long userId);
+    Page<Report> findByUserId(Long userId, Pageable pageable);
+    Optional<Report> findByIdAndUserId(Long id, Long userId);
 }

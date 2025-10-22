@@ -1,159 +1,165 @@
 package com.medmuse.medmuse_backend.service;
-import java.time.LocalDate;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import com.medmuse.medmuse_backend.dto.HealthAnalysisRequest;
-import com.medmuse.medmuse_backend.dto.HealthAnalysisResponse;
-import com.medmuse.medmuse_backend.dto.ReportDto;
-import com.medmuse.medmuse_backend.dto.SymptomEntryDto;
+import com.medmuse.medmuse_backend.dto.*;
 import com.medmuse.medmuse_backend.entity.Report;
 import com.medmuse.medmuse_backend.entity.User;
 import com.medmuse.medmuse_backend.entity.UserDemographics;
 import com.medmuse.medmuse_backend.repository.ReportRepository;
+import com.medmuse.medmuse_backend.repository.SymptomEntryRepository;
 import com.medmuse.medmuse_backend.repository.UserRepository;
-import com.medmuse.medmuse_backend.service.factory.StrategyFactory;
+import com.medmuse.medmuse_backend.service.ai.AIServiceInterface;
+import com.medmuse.medmuse_backend.service.interfaces.PdfServiceInterface;
 import com.medmuse.medmuse_backend.service.interfaces.ReportServiceInterface;
-import com.medmuse.medmuse_backend.service.interfaces.SymptomServiceInterface;
-import com.medmuse.medmuse_backend.service.strategy.DocumentGenerationStrategy;
-import com.medmuse.medmuse_backend.service.strategy.ReportGenerationStrategy;
-import com.medmuse.medmuse_backend.util.ExceptionHandler;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Service
-@Transactional
 public class ReportService implements ReportServiceInterface {
-    
+
+    private final AIServiceInterface aiService;
+    private final PdfServiceInterface pdfService;
     private final ReportRepository reportRepository;
     private final UserRepository userRepository;
-    private final SymptomServiceInterface symptomService;
-    private final StrategyFactory strategyFactory;
-    
-    public ReportService(ReportRepository reportRepository,
-                        UserRepository userRepository,
-                        SymptomServiceInterface symptomService,
-                        StrategyFactory strategyFactory) {
+    private final SymptomEntryRepository symptomEntryRepository;
+
+    private final ExecutorService executor = Executors.newCachedThreadPool();
+
+    public ReportService(AIServiceInterface aiService,
+            PdfServiceInterface pdfService,
+            ReportRepository reportRepository,
+            UserRepository userRepository,
+            SymptomEntryRepository symptomEntryRepository) {
+        this.aiService = aiService;
+        this.pdfService = pdfService;
         this.reportRepository = reportRepository;
         this.userRepository = userRepository;
-        this.symptomService = symptomService;
-        this.strategyFactory = strategyFactory;
+        this.symptomEntryRepository = symptomEntryRepository;
     }
-    
-    @Async
+
     @Override
     public CompletableFuture<ReportDto> generateWeeklyReport(Long userId) {
         LocalDate endDate = LocalDate.now();
-        LocalDate startDate = endDate.minusDays(6);
-        
+        LocalDate startDate = endDate.minusWeeks(1);
+
         return generateReportForPeriod(userId, startDate, endDate);
     }
-    
-    @Async
+
     @Override
     public CompletableFuture<ReportDto> generateReportForPeriod(Long userId, LocalDate startDate, LocalDate endDate) {
+        // Fetch user and demographics
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+                .orElseThrow(() -> new RuntimeException("User not found with id " + userId));
 
-        UserDemographics demographics = user.getDemographics();
-        
-        List<SymptomEntryDto> symptomEntries = symptomService.getUserSymptomEntriesByDateRange(userId, startDate, endDate);
-        
-        if (symptomEntries.isEmpty()) {
-            throw new RuntimeException("No symptom entries found for the selected date range. Please choose a period with recorded symptoms.");
-        }
-        
-        HealthAnalysisRequest analysisRequest = new HealthAnalysisRequest(userId, demographics, startDate, endDate, symptomEntries);
-        
-        ReportGenerationStrategy reportStrategy = strategyFactory.getReportGenerationStrategy("AI_ANALYSIS");
-        
-        return reportStrategy.analyzeHealthData(analysisRequest)
-            .thenApply(analysisResponse -> {
-                Report report = createReportFromAnalysis(user, startDate, endDate, analysisResponse);
-                Report savedReport = reportRepository.save(report);
-                
-                // Generate document asynchronously
-                generateDocumentAsync(savedReport);
-                
-                return new ReportDto(savedReport);
-            });
+        UserDemographics demo = user.getDemographics();
+        if (demo == null) throw new RuntimeException("No demographics found for user: " + userId);
+
+        List<SymptomEntryDto> symptomDtos = symptomEntryRepository
+                .findByUserIdAndEntryDateBetweenOrderByEntryDateDesc(userId, startDate, endDate)
+                .stream().map(SymptomEntryDto::new).toList();
+
+        HealthAnalysisRequest request = new HealthAnalysisRequest(userId, demo, startDate, endDate, symptomDtos);
+
+        // Call AI service asynchronously
+        return aiService.analyzeHealthData(request)
+                .thenApplyAsync(analysis -> {
+                    // Log AI response
+                    System.out.println("AI Response for user {}: Summary: {}, Risks: {}, Recommendations: {}"+
+                            userId+
+                            analysis.getHealthSummary()+
+                            analysis.getRiskAreas()+
+                            analysis.getRecommendations()
+                    );
+
+                    // Save report without PDF
+                    Report report = new Report();
+                    report.setUser(user);
+                    report.setWeekStartDate(startDate);
+                    report.setWeekEndDate(endDate);
+                    report.setGeneratedAt(LocalDateTime.now());
+                    report.setHealthSummary(analysis.getHealthSummary());
+                    report.setRiskAreas(analysis.getRiskAreas());
+                    report.setRecommendations(analysis.getRecommendations());
+
+                    Report saved = reportRepository.save(report);
+                    return new ReportDto(saved);
+                }, executor);
     }
-    
-    private Report createReportFromAnalysis(User user, LocalDate startDate, LocalDate endDate, 
-                                          HealthAnalysisResponse analysisResponse) {
-        Report report = new Report(user, startDate, endDate);
-        report.setHealthSummary(analysisResponse.getHealthSummary());
-        report.setRiskAreas(analysisResponse.getRiskAreas());
-        report.setRecommendations(analysisResponse.getRecommendations());
-        return report;
-    }
-    
-    @Async
-    protected void generateDocumentAsync(Report report) {
+
+     private ReportDto buildAndSaveReport(User user, LocalDate startDate, LocalDate endDate, HealthAnalysisResponse analysis) {
         try {
-            DocumentGenerationStrategy documentStrategy = strategyFactory.getDocumentGenerationStrategy("PDF");
-            String documentPath = documentStrategy.generateDocument(report);
-            report.setPdfPath(documentPath);
-            reportRepository.save(report);
+            Report report = new Report();
+            report.setUser(user);
+            report.setWeekStartDate(startDate);
+            report.setWeekEndDate(endDate);
+            report.setGeneratedAt(LocalDateTime.now());
+            report.setHealthSummary(analysis.getHealthSummary());
+            report.setRiskAreas(analysis.getRiskAreas());
+            report.setRecommendations(analysis.getRecommendations());
+
+            // Save report to get ID
+            Report saved = reportRepository.save(report);
+
+            // Generate PDF safely in async
+            CompletableFuture.runAsync(() -> {
+                try {
+                    String pdfPath = pdfService.generateReportPdf(saved);
+                    saved.setPdfPath(pdfPath);
+                    reportRepository.save(saved);
+                } catch (Exception e) {
+                    System.out.println("PDF generation failed for report {}");
+                }
+            }, executor);
+
+            return new ReportDto(saved);
+
         } catch (Exception e) {
-            ExceptionHandler.handleDocumentGenerationException("PDF", report.getId(), e);
+            System.out.println("Failed to build and save report for user {}");
+            throw new RuntimeException("Report generation failed", e);
         }
     }
-    
+
     @Override
     public List<ReportDto> getUserReports(Long userId) {
-        return reportRepository.findByUserIdOrderByGeneratedAtDesc(userId)
-            .stream()
-            .map(ReportDto::new)
-            .collect(Collectors.toList());
+        return reportRepository.findByUserId(userId)
+                .stream()
+                .map(ReportDto::new)
+                .toList();
     }
-    
+
     @Override
     public Page<ReportDto> getUserReports(Long userId, Pageable pageable) {
-        return reportRepository.findByUserIdOrderByGeneratedAtDesc(userId, pageable)
-            .map(ReportDto::new);
+        return reportRepository.findByUserId(userId, pageable)
+                .map(ReportDto::new);
     }
-    
+
     @Override
     public ReportDto getReportById(Long userId, Long reportId) {
-        Report report = reportRepository.findByIdAndUserId(reportId, userId)
-            .orElseThrow(() -> new RuntimeException("Report not found: " + reportId));
-        
-        return new ReportDto(report);
+        return reportRepository.findByIdAndUserId(reportId, userId)
+                .map(ReportDto::new)
+                .orElseThrow(() -> new RuntimeException("Report not found"));
     }
-    
-    @Override
-    public void deleteReport(Long userId, Long reportId) {
-        Report report = reportRepository.findByIdAndUserId(reportId, userId)
-            .orElseThrow(() -> new RuntimeException("Report not found: " + reportId));
-        
-        if (report.getPdfPath() != null) {
-            DocumentGenerationStrategy documentStrategy = strategyFactory.getDocumentGenerationStrategy("PDF");
-            documentStrategy.deleteDocument(report.getPdfPath());
-        }
-        
-        reportRepository.delete(report);
-    }
-    
+
     @Override
     public byte[] getReportPdf(Long userId, Long reportId) {
         Report report = reportRepository.findByIdAndUserId(reportId, userId)
-            .orElseThrow(() -> new RuntimeException("Report not found: " + reportId));
-        
-        if (report.getPdfPath() == null) {
-            // Generate document if it doesn't exist
-            DocumentGenerationStrategy documentStrategy = strategyFactory.getDocumentGenerationStrategy("PDF");
-            String documentPath = documentStrategy.generateDocument(report);
-            report.setPdfPath(documentPath);
-            reportRepository.save(report);
-        }
-        
-        DocumentGenerationStrategy documentStrategy = strategyFactory.getDocumentGenerationStrategy("PDF");
-        return documentStrategy.readDocument(report.getPdfPath());
+                .orElseThrow(() -> new RuntimeException("Report not found"));
+        return pdfService.readPdfFile(report.getPdfPath());
+    }
+
+    @Override
+    public void deleteReport(Long userId, Long reportId) {
+        reportRepository.findByIdAndUserId(reportId, userId)
+                .ifPresent(report -> {
+                    pdfService.deletePdfFile(report.getPdfPath());
+                    reportRepository.delete(report);
+                });
     }
 }
