@@ -1,7 +1,9 @@
 package com.medmuse.medmuse_backend.controller;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.itextpdf.text.DocumentException;
 import com.medmuse.medmuse_backend.dto.ReportDto;
 import com.medmuse.medmuse_backend.dto.UserDto;
 import com.medmuse.medmuse_backend.service.interfaces.ReportServiceInterface;
@@ -36,25 +39,14 @@ public class ReportController {
         this.reportService = reportService;
         this.userService = userService;
     }
-
+    
     @PostMapping("/generate")
     public ResponseEntity<ReportDto> generateWeeklyReport(
-            @AuthenticationPrincipal OidcUser principal) {
-
+            @AuthenticationPrincipal OidcUser principal) throws DocumentException, IOException {
+        
         UserDto user = UserContext.getCurrentUser(principal, userService);
+        
         ReportDto report = reportService.generateWeeklyReport(user.getId());
-        return ResponseEntity.status(HttpStatus.CREATED).body(report);
-    }
-
-    @PostMapping("/generate/custom")
-    public ResponseEntity<ReportDto> generateCustomReport(
-            @AuthenticationPrincipal OidcUser principal,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-
-        UserDto user = UserContext.getCurrentUser(principal, userService);
-        ReportDto report = reportService.generateReportForPeriod(user.getId(), startDate, endDate);
-
         return ResponseEntity.status(HttpStatus.CREATED).body(report);
     }
 
@@ -78,9 +70,21 @@ public class ReportController {
     public ResponseEntity<ReportDto> getReport(
             @AuthenticationPrincipal OidcUser principal,
             @PathVariable Long reportId) {
-
+        
         UserDto user = UserContext.getCurrentUser(principal, userService);
         ReportDto report = reportService.getReportById(user.getId(), reportId);
         return ResponseEntity.ok(report);
+    }
+
+    @PostMapping("/generate/custom")
+    public ResponseEntity<ReportDto> generateCustomReport(
+            @AuthenticationPrincipal OidcUser principal,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) throws DocumentException, IOException {
+
+        UserDto user = UserContext.getCurrentUser(principal, userService);
+        ReportDto report = reportService.generateReportForPeriod(user.getId(), startDate, endDate);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(report);
     }
 }

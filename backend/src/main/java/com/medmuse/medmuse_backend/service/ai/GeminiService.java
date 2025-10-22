@@ -1,5 +1,7 @@
 package com.medmuse.medmuse_backend.service.ai;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.medmuse.medmuse_backend.dto.HealthAnalysisRequest;
 import com.medmuse.medmuse_backend.dto.HealthAnalysisResponse;
 import com.medmuse.medmuse_backend.dto.SymptomEntryDto;
@@ -7,11 +9,9 @@ import com.medmuse.medmuse_backend.dto.SymptomEntryDto;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
 
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -25,10 +25,13 @@ public class GeminiService implements AIServiceInterface {
     @Value("${medmuse.ai.gemini.endpoint}")
     private String endpoint;
 
-    @Value("${medmuse.ai.gemini.model}")
-    private String model;
+    private final WebClient webClient;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    public GeminiService(WebClient.Builder webClient) {
+        this.webClient = webClient.build();
+    }
 
     @Override
     public HealthAnalysisResponse analyzeHealthData(HealthAnalysisRequest request) {
@@ -39,75 +42,127 @@ public class GeminiService implements AIServiceInterface {
 
         String prompt = buildPrompt(request);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(apiKey);
-
         Map<String, Object> body = Map.of(
-                "model", model,
-                "input", List.of(Map.of("text", prompt))
+                "contents", new Object[]{
+                    Map.of("parts", new Object[]{
+                Map.of("text", prompt)
+            })
+                }
         );
 
-        ResponseEntity<Map> response = restTemplate.postForEntity(endpoint, new HttpEntity<>(body, headers), Map.class);
-        String aiText = extractTextFromResponse(response.getBody());
+        String response = webClient.post()
+                .uri(endpoint + apiKey)
+                .header("Content-Type" + "application/json")
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
 
-        return new HealthAnalysisResponse(
-                extractSection(aiText, "Summary"),
-                extractSection(aiText, "Risks"),
-                extractSection(aiText, "Recommendations"),
-                "Gemini"
-        );
+        log.info("Raw Gemini Response: {}", response);
+
+        return parseResponse(response);
     }
 
     private String buildPrompt(HealthAnalysisRequest request) {
+        // Prepare symptom string
         String symptoms = (request.getSymptomEntries() != null && !request.getSymptomEntries().isEmpty())
-                ? request.getSymptomEntries().stream().map(SymptomEntryDto::toString).collect(Collectors.joining(", "))
+                ? request.getSymptomEntries().stream()
+                        .map(SymptomEntryDto::toString)
+                        .collect(Collectors.joining(", "))
                 : "No symptoms recorded";
 
-        return """
-                You are a medical AI assistant.
-                User demographics:
-                Age: %d, Gender: %s, Weight: %.1fkg, Height: %s, Nationality: %s
-                Symptom entries: %s
-
-                Provide:
-                1. Summary
-                2. Risk areas
-                3. Recommendations
-                """.formatted(
+        // Prepare user demographics
+        String demographics = String.format(
+                "Age: %s, Gender: %s, Weight: %s, Height: %s, Nationality: %s",
                 request.getUserDemographics().getAge(),
                 request.getUserDemographics().getGender(),
                 request.getUserDemographics().getWeight(),
                 request.getUserDemographics().getHeight(),
-                request.getUserDemographics().getNationality(),
-                symptoms
+                request.getUserDemographics().getNationality()
         );
-    }
 
-    private String extractTextFromResponse(Map<String, Object> body) {
-        if (body.containsKey("candidates")) {
-            List<?> candidates = (List<?>) body.get("candidates");
-            if (!candidates.isEmpty()) {
-                Map<?, ?> candidate = (Map<?, ?>) candidates.get(0);
-                Map<?, ?> content = (Map<?, ?>) candidate.get("content");
-                if (content != null && content.containsKey("text")) {
-                    return content.get("text").toString();
-                }
+        // Build strict JSON-only prompt
+        String prompt = """
+            You are a healthcare analytics AI assistant. Analyze the following data.
+
+            IMPORTANT: Do NOT provide medical diagnosis or treatment advice. Focus only on general health trends, risk areas, and lifestyle recommendations.
+
+            Person Data: %s
+            Symptom Data: [%s]
+
+            Respond ONLY in JSON format exactly as below (no extra text, no explanations):
+
+            {
+              "healthSummary": "...",
+              "riskAreas": "...",
+              "recommendations": "..."
             }
-        }
-        return "";
+            """.formatted(demographics, symptoms);
+
+        return prompt;
     }
 
-    private String extractSection(String text, String sectionName) {
-        if (text == null || text.isBlank()) {
-            return "";
+    private HealthAnalysisResponse parseResponse(String response) {
+        if (response == null || response.isBlank()) {
+            return new HealthAnalysisResponse(
+                    "No data available from AI.",
+                    "No risk areas identified.",
+                    "No recommendations provided.",
+                    "Gemini"
+            );
         }
-        String[] parts = text.split("(?i)" + sectionName + ":"); // Case-insensitive split
-        if (parts.length < 2) {
-            return "";
+
+        try {
+            // Parse top-level Gemini JSON
+            JsonNode root = objectMapper.readTree(response);
+            JsonNode candidates = root.path("candidates");
+            if (!candidates.isArray() || candidates.isEmpty()) {
+                log.warn("Gemini response missing candidates: {}", response);
+                return new HealthAnalysisResponse("Invalid AI response format.", "", "", "Gemini");
+            }
+
+            // Extract text content
+            String textContent = candidates.get(0)
+                    .path("content")
+                    .path("parts")
+                    .get(0)
+                    .path("text")
+                    .asText("");
+
+            if (textContent.isBlank()) {
+                log.warn("Gemini response has no text content: {}", response);
+                return new HealthAnalysisResponse("No data available from AI.", "", "", "Gemini");
+            }
+
+            // ✅ Clean up code fences and escaped characters
+            String cleanJson = textContent
+                    .replaceAll("(?s)```json", "")
+                    .replaceAll("(?s)```", "")
+                    .trim();
+
+            // Sometimes Gemini double-escapes quotes → fix that safely
+            if (cleanJson.startsWith("\"") && cleanJson.endsWith("\"")) {
+                cleanJson = objectMapper.readValue(cleanJson, String.class);
+            }
+
+            // ✅ Now parse the inner JSON object
+            JsonNode aiJson = objectMapper.readTree(cleanJson);
+
+            String summary = aiJson.path("healthSummary").asText("No summary available");
+            String risks = aiJson.path("riskAreas").asText("No risks detected");
+            String recs = aiJson.path("recommendations").asText("No recommendations available");
+
+            return new HealthAnalysisResponse(summary, risks, recs, "Gemini");
+
+        } catch (Exception e) {
+            log.error("Failed to parse Gemini response: {}", e.getMessage());
+            return new HealthAnalysisResponse(
+                    "Unable to parse AI response.",
+                    "Parsing error.",
+                    "Please retry later.",
+                    "Gemini"
+            );
         }
-        String section = parts[1].trim();
-        int end = section.indexOf("\n\n"); // Stop at next empty line
-        return end > 0 ? section.substring(0, end).trim() : section;
     }
+
 }

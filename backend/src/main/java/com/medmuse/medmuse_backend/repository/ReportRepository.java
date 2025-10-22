@@ -16,4 +16,6 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     List<Report> findByUserId(Long userId);
     Page<Report> findByUserId(Long userId, Pageable pageable);
     Optional<Report> findByIdAndUserId(Long id, Long userId);
+    List<Report> findByUserIdOrderByGeneratedAtDesc(Long userId);
+    Page<Report> findByUserIdOrderByGeneratedAtDesc(Long userId, Pageable pageable);
 }

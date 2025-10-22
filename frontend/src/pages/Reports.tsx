@@ -190,23 +190,6 @@ export default function Reports() {
     pdf.save("report-preview.pdf");
   };
 
-  //REMOVED SECTION
-  // const generateWeeklyReportHandler = async () => {
-  //   // setIsGenerating(true); //old
-  //   setIsGeneratingWeekly(true); //  only affect weekly button
-  //   try {
-  //     await dispatch(generateWeeklyReport()).unwrap();
-  //     toast({
-  //       title: "Weekly Report Generated",
-  //       description: "Your weekly health report has been generated!",
-  //     });
-  //     dispatch(getUserReports());
-  //   } catch {
-  //   } finally {
-  //     // setIsGenerating(false); //old
-  //     setIsGeneratingWeekly(false); // only reset weekly
-  //   }
-  // };
 
   const downloadReport = async (reportId: number) => {
     try {

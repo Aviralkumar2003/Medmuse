@@ -44,15 +44,16 @@ public class Report {
     @CreationTimestamp
     private LocalDateTime generatedAt;
     
-    @Column(length = 5000)
+    @Column(name = "health_summary", columnDefinition = "CLOB")
     private String healthSummary;
-    
-    @Column(length = 2000)
+
+    @Column(name = "risk_areas", columnDefinition = "CLOB")
     private String riskAreas;
-    
-    @Column(length = 3000)
+
+    @Column(name = "recommendations", columnDefinition = "CLOB")
     private String recommendations;
-    
+
+
     private String pdfPath;
 
     
