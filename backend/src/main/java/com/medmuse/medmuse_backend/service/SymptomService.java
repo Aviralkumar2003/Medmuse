@@ -3,6 +3,8 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,9 @@ import com.medmuse.medmuse_backend.service.interfaces.SymptomServiceInterface;
 @Service
 @Transactional
 public class SymptomService implements SymptomServiceInterface {
+
+    @Autowired
+    private ModelMapper modelMapper;
     
     private final SymptomRepository symptomRepository;
     private final SymptomEntryRepository symptomEntryRepository;
@@ -60,7 +65,7 @@ public class SymptomService implements SymptomServiceInterface {
                                             entryDto.getNotes(), entryDto.getEntryDate());
         entry = symptomEntryRepository.save(entry);
         
-        return new SymptomEntryDto(entry);
+        return modelMapper.map(entry, SymptomEntryDto.class);
     }
     
     @Override
@@ -73,14 +78,14 @@ public class SymptomService implements SymptomServiceInterface {
     @Override
     public Page<SymptomEntryDto> getUserSymptomEntries(Long userId, Pageable pageable) {
         return symptomEntryRepository.findByUserIdOrderByEntryDateDesc(userId, pageable)
-            .map(SymptomEntryDto::new);
+            .map(entry -> modelMapper.map(entry, SymptomEntryDto.class));
     }
     
     @Override
     public List<SymptomEntryDto> getUserSymptomEntriesByDateRange(Long userId, LocalDate startDate, LocalDate endDate) {
         return symptomEntryRepository.findByUserIdAndEntryDateBetweenOrderByEntryDateDesc(userId, startDate, endDate)
             .stream()
-            .map(SymptomEntryDto::new)
+            .map(entry -> modelMapper.map(entry, SymptomEntryDto.class))
             .collect(Collectors.toList());
     }
     
@@ -101,7 +106,7 @@ public class SymptomService implements SymptomServiceInterface {
         }
         
         entry = symptomEntryRepository.save(entry);
-        return new SymptomEntryDto(entry);
+        return modelMapper.map(entry, SymptomEntryDto.class);
     }
     
     @Override

@@ -449,45 +449,18 @@ export default function Reports() {
                     {isGeneratingReport ? (
                       <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
                     ) : (
-                      <Download className="h-4 w-4 mr-2" />
+                      <FileText className="h-4 w-4 mr-2" />
                     )}
                     Generate Report
                   </Button>
-
-                  {/* Download PDF button */}
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={handleDownloadPdf}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download as PDF
-                  </Button>
                 </CardContent>
               </Card>
-
-              {/* Custom Report Button
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={generateReport}
-                    disabled={isGeneratingCustom} //  changed
-                  >
-                    {isGeneratingCustom ? ( //  changed
-                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                    ) : (
-                      <Download className="h-4 w-4 mr-2" />
-                    )}
-                    Generate Custom Report
-                  </Button>
-                </CardContent>
-              </Card> */}
 
               {/* Previous Reports */}
               <Card className="shadow-card border-border">
                 <CardHeader>
                   <CardTitle className="font-ui text-foreground">
-                    Previous Reports
+                    Generated Reports
                   </CardTitle>
                   <CardDescription className="font-body">
                     Your generated health reports

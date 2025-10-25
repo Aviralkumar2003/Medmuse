@@ -2,6 +2,8 @@ package com.medmuse.medmuse_backend.service;
 
 import java.util.Optional;
 
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.Map;
@@ -17,6 +19,9 @@ import com.medmuse.medmuse_backend.service.interfaces.UserServiceInterface;
 @Service
 @Transactional
 public class UserService implements UserServiceInterface {
+
+    @Autowired
+    private ModelMapper modelMapper;
 
     private final UserRepository userRepository;
     private final DemographicsRepository demographicRepository;
@@ -37,17 +42,19 @@ public class UserService implements UserServiceInterface {
         user.setProfilePicture(profilePicture);
 
         user = userRepository.save(user);
-        return new UserDto(user);
+        return modelMapper.map(user, UserDto.class);
     }
 
     @Override
     public Optional<UserDto> findByGoogleId(String googleId) {
-        return userRepository.findByGoogleId(googleId).map(UserDto::new);
+        return userRepository.findByGoogleId(googleId)
+                .map(entry -> modelMapper.map(entry, UserDto.class));
     }
 
     @Override
     public Optional<UserDto> findById(Long id) {
-        return userRepository.findById(id).map(UserDto::new);
+        return userRepository.findById(id)
+                .map(entry -> modelMapper.map(entry, UserDto.class));
     }
 
     @Override
@@ -56,7 +63,7 @@ public class UserService implements UserServiceInterface {
             .orElseThrow(() -> new RuntimeException("User not found: " + userId));
         user.setName(name);
         user = userRepository.save(user);
-        return new UserDto(user);
+        return modelMapper.map(user, UserDto.class);
     }
 
     @Override
@@ -90,6 +97,6 @@ public class UserService implements UserServiceInterface {
         userDemographics = demographicRepository.save(userDemographics);
         userRepository.save(user);
         
-        return new UserDemographicsDto(userDemographics);
+        return modelMapper.map(userDemographics, UserDemographicsDto.class);
     }
 }

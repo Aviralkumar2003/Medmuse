@@ -13,6 +13,8 @@ import com.medmuse.medmuse_backend.service.interfaces.ReportServiceInterface;
 
 import jakarta.transaction.Transactional;
 
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -26,6 +28,9 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 public class ReportService implements ReportServiceInterface {
+
+    @Autowired
+    private ModelMapper modelMapper;
 
     private final AIServiceInterface aiService;
     private final ReportRepository reportRepository;
@@ -57,9 +62,17 @@ public class ReportService implements ReportServiceInterface {
 
         List<SymptomEntryDto> symptomDtos = symptomEntryRepository
                 .findByUserIdAndEntryDateBetweenOrderByEntryDateDesc(userId, startDate, endDate)
-                .stream().map(SymptomEntryDto::new).toList();
+                .stream()
+                .map(entry -> modelMapper.map(entry, SymptomEntryDto.class))
+                .toList();
 
-        HealthAnalysisRequest request = new HealthAnalysisRequest(userId, demo, startDate, endDate, symptomDtos);
+        HealthAnalysisRequest request = new HealthAnalysisRequest();
+        request.setUserId(userId);
+        request.setStartDate(startDate);
+        request.setEndDate(endDate);
+        request.setSymptomEntries(symptomDtos);
+        request.setDemographics(modelMapper.map(demo, UserDemographicsDto.class));
+
         HealthAnalysisResponse response = aiService.analyzeHealthData(request);
 
         System.out.println("AI Analysis Response: " + response);
@@ -79,7 +92,7 @@ public class ReportService implements ReportServiceInterface {
         report.setPdfPath(documentPath);
 
         Report saved = reportRepository.save(report);
-        return new ReportDto(saved);
+        return modelMapper.map(saved, ReportDto.class);
     }
 
     @Override
@@ -94,14 +107,14 @@ public class ReportService implements ReportServiceInterface {
     public List<ReportDto> getUserReports(Long id) {
         return reportRepository.findByUserIdOrderByGeneratedAtDesc(id)
                 .stream()
-                .map(ReportDto::new)
+                .map(entry -> modelMapper.map(entry, ReportDto.class))
                 .collect(Collectors.toList());
     }
 
     @Override
     public Page<ReportDto> getUserReports(Long id, Pageable pageable) {
         return reportRepository.findByUserIdOrderByGeneratedAtDesc(id, pageable)
-                .map(ReportDto::new);
+                .map(entry -> modelMapper.map(entry, ReportDto.class));
     }
 
     @Override
@@ -109,6 +122,6 @@ public class ReportService implements ReportServiceInterface {
         Report report = reportRepository.findByIdAndUserId(reportId, id)
                 .orElseThrow(() -> new RuntimeException("Report not found: " + reportId));
 
-        return new ReportDto(report);
+        return modelMapper.map(report, ReportDto.class);
     }
 }

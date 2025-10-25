@@ -1,8 +1,6 @@
 package com.medmuse.medmuse_backend.dto;
+
 import java.time.LocalDateTime;
-
-import com.medmuse.medmuse_backend.entity.User;
-
 import lombok.Data;
 
 @Data
@@ -14,13 +12,12 @@ public class UserDto {
     private String profilePicture;
     private LocalDateTime createdAt;
 
-    
-    public UserDto(User user) {
-        this.id = user.getId();
-        this.googleId = user.getGoogleId();
-        this.email = user.getEmail();
-        this.name = user.getName();
-        this.profilePicture = user.getProfilePicture();
-        this.createdAt = user.getCreatedAt();
+    public UserDto(Long id, String googleId, String email, String name, String profilePicture, LocalDateTime createdAt) {
+        this.id = id;
+        this.googleId = googleId;
+        this.email = email;
+        this.name = name;
+        this.profilePicture = profilePicture;
+        this.createdAt = createdAt;
     }
 }

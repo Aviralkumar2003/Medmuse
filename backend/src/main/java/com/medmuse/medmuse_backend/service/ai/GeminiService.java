@@ -36,7 +36,7 @@ public class GeminiService implements AIServiceInterface {
     @Override
     public HealthAnalysisResponse analyzeHealthData(HealthAnalysisRequest request) {
 
-        if (request == null || request.getUserDemographics() == null) {
+        if (request == null || request.getDemographics() == null) {
             throw new RuntimeException("HealthAnalysisRequest or demographics missing");
         }
 
@@ -74,11 +74,11 @@ public class GeminiService implements AIServiceInterface {
         // Prepare user demographics
         String demographics = String.format(
                 "Age: %s, Gender: %s, Weight: %s, Height: %s, Nationality: %s",
-                request.getUserDemographics().getAge(),
-                request.getUserDemographics().getGender(),
-                request.getUserDemographics().getWeight(),
-                request.getUserDemographics().getHeight(),
-                request.getUserDemographics().getNationality()
+                request.getDemographics().getGender(),
+                request.getDemographics().getAge(),
+                request.getDemographics().getWeight(),
+                request.getDemographics().getHeight(),
+                request.getDemographics().getNationality()
         );
 
         // Build strict JSON-only prompt

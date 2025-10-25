@@ -1,23 +1,14 @@
 package com.medmuse.medmuse_backend.entity;
 
 import java.util.List;
-
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Entity
-@Table(name = "symptoms")
 @Data
 @NoArgsConstructor
+@Entity
+@Table(name = "symptoms")
 public class Symptom {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,15 +23,15 @@ public class Symptom {
     private String description;
     
     @Column(nullable = false)
-    private boolean isActive = true;
+    private boolean active = true;
     
-    @OneToMany(mappedBy = "symptom", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<SymptomEntry> symptomEntries;
-    
+    @OneToMany(mappedBy = "symptom", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<SymptomEntry> entries;
+
     public Symptom(String name, String category, String description) {
         this.name = name;
         this.category = category;
         this.description = description;
-        this.isActive = true;
+        this.active = true;
     }
 }

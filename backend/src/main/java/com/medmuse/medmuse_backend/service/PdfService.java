@@ -29,8 +29,6 @@ public class PdfService {
 
     public String generatePdf(Report report) throws DocumentException, IOException {
 
-        Path filePath = null;
-
         Path directory = Paths.get(pdfDirectory);
         if (!Files.exists(directory)) {
             Files.createDirectories(directory);
@@ -42,7 +40,7 @@ public class PdfService {
                 safeTimestamp,
                 report.getId());
 
-        filePath = directory.resolve(filename);
+        Path filePath = directory.resolve(filename);
 
         Document document = new Document();
         PdfWriter.getInstance(document, new FileOutputStream(filePath.toFile()));
