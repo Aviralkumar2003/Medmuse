@@ -7,7 +7,12 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@NoArgsConstructor
+@AllArgsConstructor
 public class ErrorResponse {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime timestamp;
@@ -16,10 +21,6 @@ public class ErrorResponse {
     private String message;
     private String path;
     private List<ValidationError> errors;
-
-    public ErrorResponse() {
-        timestamp = LocalDateTime.now();
-    }
 
     public ErrorResponse(int status, String error, String message, String path) {
         this();
