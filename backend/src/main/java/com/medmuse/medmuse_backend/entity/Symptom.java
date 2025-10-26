@@ -23,7 +23,7 @@ public class Symptom {
     private String description;
     
     @Column(nullable = false)
-    private boolean active = true;
+    private boolean isActive = true;
     
     @OneToMany(mappedBy = "symptom", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SymptomEntry> entries;
@@ -32,6 +32,6 @@ public class Symptom {
         this.name = name;
         this.category = category;
         this.description = description;
-        this.active = true;
+        this.isActive = true;
     }
 }
