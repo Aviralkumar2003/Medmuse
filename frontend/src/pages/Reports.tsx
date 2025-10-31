@@ -47,7 +47,6 @@ export default function Reports() {
   });
 
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
-  const [reportFormat, setReportFormat] = useState("pdf");
   const [isGeneratingReport, setIsGeneratingReport] = useState(false); //old //new change
   // const [isGeneratingWeekly, setIsGeneratingWeekly] = useState(false); //  added //old
   // const [isGeneratingCustom, setIsGeneratingCustom] = useState(false); //  added //old
@@ -329,53 +328,6 @@ export default function Reports() {
                   )}
                 </CardContent>
               </Card>
-
-              {/* Report Format */}
-              <Card className="shadow-card border-border">
-                <CardHeader>
-                  <CardTitle className="font-ui text-foreground">
-                    Export Format
-                  </CardTitle>
-                  <CardDescription className="font-body">
-                    Choose your preferred file format
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="radio"
-                        id="pdf"
-                        name="format"
-                        value="pdf"
-                        checked={reportFormat === "pdf"}
-                        onChange={(e) => setReportFormat(e.target.value)}
-                        className="text-primary"
-                      />
-                      <Label htmlFor="pdf" className="font-body cursor-pointer">
-                        PDF - Best for sharing with doctors
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="radio"
-                        id="word"
-                        name="format"
-                        value="word"
-                        checked={reportFormat === "word"}
-                        onChange={(e) => setReportFormat(e.target.value)}
-                        className="text-primary"
-                      />
-                      <Label
-                        htmlFor="word"
-                        className="font-body cursor-pointer"
-                      >
-                        Word Document - Editable format
-                      </Label>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
             </div>
 
             {/* Report Preview & Actions */}
@@ -419,12 +371,6 @@ export default function Reports() {
                         ? "All symptoms"
                         : `${selectedSymptoms.length} selected`}
                     </p>
-                  </div>
-                  <div>
-                    <Label className="font-ui text-sm text-muted-foreground">
-                      Format
-                    </Label>
-                    <p className="font-body capitalize">{reportFormat}</p>
                   </div>
                 </CardContent>
               </Card>

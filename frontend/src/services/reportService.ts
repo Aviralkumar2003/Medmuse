@@ -8,7 +8,8 @@ export interface Report {
   healthSummary: string;
   riskAreas: string;
   recommendations: string;
-  hasPdf: boolean;
+  hasPdf: boolean;      // frontend-friendly flag
+  pdfPath?: string;     // keep original path too (optional)
 }
 
 export interface PaginatedResponse<T> {
@@ -35,14 +36,33 @@ export interface GetReportsParams {
 
 export interface CustomReportParams {
   startDate: string; // YYYY-MM-DD format
-  endDate: string; // YYYY-MM-DD format
+  endDate: string;   // YYYY-MM-DD format
+}
+
+/**
+ * Helper to map backend ReportDto -> frontend Report
+ * backend ReportDto uses `pdfPath` (string|null). We expose `hasPdf` boolean.
+ */
+function mapReportDtoToReport(dto: any): Report {
+  return {
+    id: dto.id,
+    weekStartDate: dto.weekStartDate,
+    weekEndDate: dto.weekEndDate,
+    generatedAt: dto.generatedAt,
+    healthSummary: dto.healthSummary,
+    riskAreas: dto.riskAreas,
+    recommendations: dto.recommendations,
+    pdfPath: dto.pdfPath,
+    hasPdf: !!(dto.pdfPath && dto.pdfPath.toString().trim().length > 0),
+  };
 }
 
 export const reportService = {
   // Generate weekly report
   generateWeeklyReport: async (): Promise<Report> => {
     const response = await api.post('/api/reports/generate');
-    return response.data;
+    // backend returns ReportDto — map it
+    return mapReportDtoToReport(response.data);
   },
 
   // Generate custom date range report
@@ -50,27 +70,34 @@ export const reportService = {
     // Ensure dates are in YYYY-MM-DD format
     const formattedStartDate = new Date(params.startDate).toISOString().split('T')[0];
     const formattedEndDate = new Date(params.endDate).toISOString().split('T')[0];
-    
+
     const response = await api.post(`/api/reports/generate/custom?startDate=${formattedStartDate}&endDate=${formattedEndDate}`);
-    return response.data;
+    return mapReportDtoToReport(response.data);
   },
 
-  // Get user reports
+  // Get user reports (list)
   getUserReports: async (): Promise<Report[]> => {
     const response = await api.get('/api/reports/my');
-    return response.data;
+    // Map each dto to frontend Report
+    return (response.data || []).map((dto: any) => mapReportDtoToReport(dto));
   },
 
   // Get user reports (paginated)
   getUserReportsPaginated: async (params: GetReportsParams = {}): Promise<PaginatedResponse<Report>> => {
     const response = await api.get('/api/reports/my/paginated', { params });
-    return response.data;
+    const data = response.data as PaginatedResponse<any>;
+    // Map content
+    const mapped: PaginatedResponse<Report> = {
+      ...data,
+      content: (data.content || []).map((dto: any) => mapReportDtoToReport(dto))
+    };
+    return mapped;
   },
 
   // Get specific report
   getReport: async (reportId: number): Promise<Report> => {
     const response = await api.get(`/api/reports/${reportId}`);
-    return response.data;
+    return mapReportDtoToReport(response.data);
   },
 
   // Download report PDF
