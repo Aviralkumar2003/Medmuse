@@ -101,12 +101,41 @@ export const Header: React.FC<{ showNavLinks?: boolean }> = ({
                     variant="ghost"
                     className="relative h-8 w-8 rounded-full"
                   >
+                    {/* <Avatar className="h-8 w-8">
+                      <AvatarImage src={user.profilePicture} alt={user.name} />
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        {getUserInitials(user.name)}
+                      </AvatarFallback>
+                    </Avatar> */}
+                    <div className="relative">
+
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={user.profilePicture} alt={user.name} />
                       <AvatarFallback className="bg-primary text-primary-foreground">
                         {getUserInitials(user.name)}
                       </AvatarFallback>
                     </Avatar>
+
+                    {/* Demographics Status Indicator */}
+                    {/* <span
+                      title={user?.demographics ? "Demographics Completed" : "Demographics Pending"}
+                      className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background
+                        ${user?.demographics ? "bg-green-500" : "bg-red-500"}`}
+                    /> */}
+                    {/* <span
+                    onClick={() => !user?.demographics && navigate("/profile")}
+                    title={user?.demographics ? "Demographics Completed" : "Complete your profile"}
+                    className={`cursor-pointer absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background
+                      ${user?.demographics ? "bg-green-500" : "bg-red-500"}`}
+                  /> */}
+                  {!user?.demographics && (
+                    <span
+                      onClick={() => navigate("/profile")}
+                      title="Complete your profile"
+                      className="cursor-pointer absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background bg-red-500"
+                    />
+                  )}
+                  </div>
                   </Button>
                 </HoverCardTrigger>
                 <HoverCardContent className="w-64" align="end">
