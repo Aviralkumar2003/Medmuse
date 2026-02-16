@@ -8,29 +8,20 @@ import com.medmuse.medmuse_backend.dto.SymptomEntryDto;
 
 import lombok.extern.slf4j.Slf4j;
 
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 public class GeminiService implements AIServiceInterface {
 
-    @Value("${medmuse.ai.gemini.api-key}")
-    private String apiKey;
-
-    @Value("${medmuse.ai.gemini.endpoint}")
-    private String endpoint;
-
-    private final WebClient webClient;
-
+    private final ChatClient chatClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public GeminiService(WebClient.Builder webClient) {
-        this.webClient = webClient.build();
+    public GeminiService(ChatClient.Builder builder) {
+        this.chatClient = builder.build();
     }
 
     @Override
@@ -39,58 +30,49 @@ public class GeminiService implements AIServiceInterface {
         if (request == null || request.getDemographics() == null) {
             throw new RuntimeException("HealthAnalysisRequest or demographics missing");
         }
-
+        System.out.println("Generating prompt.....");
         String prompt = buildPrompt(request);
+        System.out.println("Generated prompt.....");
 
-        Map<String, Object> body = Map.of(
-                "contents", new Object[]{
-                    Map.of("parts", new Object[]{
-                Map.of("text", prompt)
-            })
-                }
-        );
+        String aiText = chatClient.prompt(prompt)
+                .call()
+                .content();   // ✅ This is already the model TEXT output
 
-        String response = webClient.post()
-                .uri(endpoint + apiKey)
-                .header("Content-Type" + "application/json")
-                .bodyValue(body)
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
+        System.out.println("Received AI response.....");
 
-        log.info("Raw Gemini Response: {}", response);
-
-        return parseResponse(response);
+        return parseResponse(aiText);
     }
 
     private String buildPrompt(HealthAnalysisRequest request) {
-        // Prepare symptom string
+
         String symptoms = (request.getSymptomEntries() != null && !request.getSymptomEntries().isEmpty())
                 ? request.getSymptomEntries().stream()
                         .map(SymptomEntryDto::toString)
                         .collect(Collectors.joining(", "))
                 : "No symptoms recorded";
 
-        // Prepare user demographics
         String demographics = String.format(
                 "Age: %s, Gender: %s, Weight: %s, Height: %s, Nationality: %s",
-                request.getDemographics().getGender(),
                 request.getDemographics().getAge(),
+                request.getDemographics().getGender(),
                 request.getDemographics().getWeight(),
                 request.getDemographics().getHeight(),
                 request.getDemographics().getNationality()
         );
 
-        // Build strict JSON-only prompt
-        String prompt = """
-            You are a healthcare analytics AI assistant. Analyze the following data.
+        return """
+            You are a healthcare analytics AI assistant.
 
-            IMPORTANT: Do NOT provide medical diagnosis or treatment advice. Focus only on general health trends, risk areas, and lifestyle recommendations.
+            IMPORTANT:
+            - Do NOT provide medical diagnosis or treatment advice.
+            - Respond ONLY with valid JSON.
+            - Do NOT include code fences.
+            - Do NOT include explanations.
 
             Person Data: %s
             Symptom Data: [%s]
 
-            Respond ONLY in JSON format exactly as below (no extra text, no explanations):
+            Required JSON format:
 
             {
               "healthSummary": "...",
@@ -98,54 +80,21 @@ public class GeminiService implements AIServiceInterface {
               "recommendations": "..."
             }
             """.formatted(demographics, symptoms);
-
-        return prompt;
     }
 
-    private HealthAnalysisResponse parseResponse(String response) {
-        if (response == null || response.isBlank()) {
-            return new HealthAnalysisResponse(
-                    "No data available from AI.",
-                    "No risk areas identified.",
-                    "No recommendations provided.",
-                    "Gemini"
-            );
+    private HealthAnalysisResponse parseResponse(String aiText) {
+
+        if (aiText == null || aiText.isBlank()) {
+            return fallback();
         }
 
         try {
-            // Parse top-level Gemini JSON
-            JsonNode root = objectMapper.readTree(response);
-            JsonNode candidates = root.path("candidates");
-            if (!candidates.isArray() || candidates.isEmpty()) {
-                log.warn("Gemini response missing candidates: {}", response);
-                return new HealthAnalysisResponse("Invalid AI response format.", "", "", "Gemini");
-            }
-
-            // Extract text content
-            String textContent = candidates.get(0)
-                    .path("content")
-                    .path("parts")
-                    .get(0)
-                    .path("text")
-                    .asText("");
-
-            if (textContent.isBlank()) {
-                log.warn("Gemini response has no text content: {}", response);
-                return new HealthAnalysisResponse("No data available from AI.", "", "", "Gemini");
-            }
-
-            // ✅ Clean up code fences and escaped characters
-            String cleanJson = textContent
-                    .replaceAll("(?s)```json", "")
-                    .replaceAll("(?s)```", "")
+            // Remove accidental code fences if model ignores instructions
+            String cleanJson = aiText
+                    .replace("```json", "")
+                    .replace("```", "")
                     .trim();
 
-            // Sometimes Gemini double-escapes quotes → fix that safely
-            if (cleanJson.startsWith("\"") && cleanJson.endsWith("\"")) {
-                cleanJson = objectMapper.readValue(cleanJson, String.class);
-            }
-
-            // ✅ Now parse the inner JSON object
             JsonNode aiJson = objectMapper.readTree(cleanJson);
 
             String summary = aiJson.path("healthSummary").asText("No summary available");
@@ -155,14 +104,17 @@ public class GeminiService implements AIServiceInterface {
             return new HealthAnalysisResponse(summary, risks, recs, "Gemini");
 
         } catch (Exception e) {
-            log.error("Failed to parse Gemini response: {}", e.getMessage());
-            return new HealthAnalysisResponse(
-                    "Unable to parse AI response.",
-                    "Parsing error.",
-                    "Please retry later.",
-                    "Gemini"
-            );
+            log.error("Failed to parse Gemini response: {}", aiText, e);
+            return fallback();
         }
     }
 
+    private HealthAnalysisResponse fallback() {
+        return new HealthAnalysisResponse(
+                "Unable to process AI response.",
+                "Parsing error.",
+                "Please retry later.",
+                "Gemini"
+        );
+    }
 }
