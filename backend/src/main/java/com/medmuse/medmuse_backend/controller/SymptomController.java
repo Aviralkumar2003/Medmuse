@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.medmuse.medmuse_backend.dto.SymptomDto;
 import com.medmuse.medmuse_backend.entity.Symptom;
 import com.medmuse.medmuse_backend.service.interfaces.SymptomServiceInterface;
 
@@ -24,9 +25,9 @@ public class SymptomController {
     }
     
     @GetMapping("/getAllSymptoms")
-    public ResponseEntity<List<Symptom>> getAllSymptoms() {
+    public ResponseEntity<List<SymptomDto>> getAllSymptoms() {
         System.out.println("Fetching all symptoms");
-        List<Symptom> symptoms = symptomService.getAllActiveSymptoms();
+        List<SymptomDto> symptoms = symptomService.getAllActiveSymptoms();
         return ResponseEntity.ok(symptoms);
     }
     

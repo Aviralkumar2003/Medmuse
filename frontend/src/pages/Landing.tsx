@@ -168,7 +168,7 @@ export default function Landing() {
             </div>
           </div>
           <div className="mt-8 pt-8 border-t border-border text-center text-sm font-ui text-muted-foreground">
-            © 2024 MedMuse. All rights reserved. Built for better health tracking.
+            © 2025 MedMuse. All rights reserved. Built for better health tracking.
           </div>
         </div>
       </footer>

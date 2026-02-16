@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.medmuse.medmuse_backend.dto.SymptomDto;
 import com.medmuse.medmuse_backend.dto.SymptomEntryDto;
 import com.medmuse.medmuse_backend.entity.Symptom;
 import com.medmuse.medmuse_backend.entity.SymptomEntry;
@@ -39,8 +40,10 @@ public class SymptomService implements SymptomServiceInterface {
     }
 
     @Override
-    public List<Symptom> getAllActiveSymptoms() {
-        return symptomRepository.findByIsActiveTrue();
+    public List<SymptomDto> getAllActiveSymptoms() {
+        return symptomRepository.findByIsActiveTrue().stream()
+            .map(symptom -> modelMapper.map(symptom, SymptomDto.class))
+            .collect(Collectors.toList());
     }
     
     @Override
