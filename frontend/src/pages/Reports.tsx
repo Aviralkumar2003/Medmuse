@@ -36,6 +36,7 @@ export default function Reports() {
     error,
   } = useAppSelector((state) => state.reports);
   const { symptoms } = useAppSelector((state) => state.symptoms);
+  const { user } = useAppSelector((state) => state.auth);
 
   const pageDescription = "Generate and view detailed reports of your symptom history and health trends";
 
@@ -147,30 +148,47 @@ export default function Reports() {
   };
 
   const generateReport = async () => {
-    setIsGeneratingReport(true);
-    try {
-      await dispatch(
-        generateCustomReport({
-          startDate: dateRange.start,
-          endDate: dateRange.end,
-        })
-      ).unwrap();
-      toast({
-        title: "Report Generated",
-        description: "Your health report has been generated successfully!",
-      });
-      dispatch(getUserReports());
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to generate report",
-        variant: "destructive"
-      });
-    } finally {
-      setIsGeneratingReport(false); //old //new change
-      // setIsGeneratingCustom(false); // only reset custom //old
-    }
-  };
+
+  // FRONTEND CHECK (no backend involvement)
+  if (!user?.demographics) {
+    toast({
+      title: "Demographics Required",
+      description: "Please fill your demographics before generating the report.",
+      variant: "destructive"
+    });
+    return;
+  }
+
+  setIsGeneratingReport(true);
+
+  try {
+    await dispatch(
+      generateCustomReport({
+        startDate: dateRange.start,
+        endDate: dateRange.end,
+      })
+    ).unwrap();
+
+    toast({
+      title: "Report Generated",
+      description: "Your health report has been generated successfully!",
+    });
+
+    dispatch(getUserReports());
+
+  } catch (error: any) {
+
+    toast({
+      title: "Error",
+      description: error.message || "Failed to generate report",
+      variant: "destructive"
+    });
+
+  } finally {
+    setIsGeneratingReport(false);
+  }
+};
+
 
   //added exporting pdf function
   const handleDownloadPdf = async () => {
@@ -386,11 +404,19 @@ export default function Reports() {
                 <CardContent className="space-y-3">
 
                   {/* Generate Weekly report button */}
+
+                  {!user?.demographics && (
+                    <div className="text-sm mb-2 text-red-600">
+                      Please complete your demographics to generate the report
+                    </div>
+                  )}
+
                   <Button
                     variant="medical"
                     className="w-full justify-start"
                     onClick={generateReport}
-                    disabled={isGeneratingReport}
+                    //disabled={isGeneratingReport}
+                    disabled={!user?.demographics || isGeneratingReport}
                   >
                     {isGeneratingReport ? (
                       <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
