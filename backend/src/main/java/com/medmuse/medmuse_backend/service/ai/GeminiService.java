@@ -13,15 +13,20 @@ import com.medmuse.medmuse_backend.dto.SymptomEntryDto;
 import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.stereotype.Service;
+
+import java.util.stream.Collectors;
+
 @Service
 @Slf4j
 public class GeminiService implements AIServiceInterface {
 
-    private final GoogleAiGeminiChatModel model;
+    private final ChatClient chatClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public GeminiService(GoogleAiGeminiChatModel model) {
-        this.model = model;
+    public GeminiService(ChatClient.Builder builder) {
+        this.chatClient = builder.build();
     }
 
     @Override
@@ -30,15 +35,17 @@ public class GeminiService implements AIServiceInterface {
         if (request == null || request.getDemographics() == null) {
             throw new RuntimeException("HealthAnalysisRequest or demographics missing");
         }
-
+        System.out.println("Generating prompt.....");
         String prompt = buildPrompt(request);
+        System.out.println("Generated prompt.....");
 
-        // 🔥 LangChain4j call (no WebClient, no manual endpoint)
-        String responseText = model.generate(prompt);
+        String aiText = chatClient.prompt(prompt)
+                .call()
+                .content();   // ✅ This is already the model TEXT output
 
-        log.info("Raw AI Response: {}", responseText);
+        System.out.println("Received AI response.....");
 
-        return parseResponse(responseText);
+        return parseResponse(aiText);
     }
 
     private String buildPrompt(HealthAnalysisRequest request) {
@@ -59,14 +66,18 @@ public class GeminiService implements AIServiceInterface {
         );
 
         return """
-            You are a healthcare analytics AI assistant. Analyze the following data.
+            You are a healthcare analytics AI assistant.
 
-            IMPORTANT: Do NOT provide medical diagnosis or treatment advice. Focus only on general health trends, risk areas, and lifestyle recommendations.
+            IMPORTANT:
+            - Do NOT provide medical diagnosis or treatment advice.
+            - Respond ONLY with valid JSON.
+            - Do NOT include code fences.
+            - Do NOT include explanations.
 
             Person Data: %s
             Symptom Data: [%s]
 
-            Respond ONLY in JSON format exactly as below (no extra text, no explanations):
+            Required JSON format:
 
             {
               "healthSummary": "...",
@@ -76,22 +87,17 @@ public class GeminiService implements AIServiceInterface {
             """.formatted(demographics, symptoms);
     }
 
-    private HealthAnalysisResponse parseResponse(String textContent) {
+    private HealthAnalysisResponse parseResponse(String aiText) {
 
-        if (textContent == null || textContent.isBlank()) {
-            return new HealthAnalysisResponse(
-                    "No data available from AI.",
-                    "No risk areas identified.",
-                    "No recommendations provided.",
-                    "Gemini"
-            );
+        if (aiText == null || aiText.isBlank()) {
+            return fallback();
         }
 
         try {
-            // Remove markdown fences if model adds them
-            String cleanJson = textContent
-                    .replaceAll("(?s)```json", "")
-                    .replaceAll("(?s)```", "")
+            // Remove accidental code fences if model ignores instructions
+            String cleanJson = aiText
+                    .replace("```json", "")
+                    .replace("```", "")
                     .trim();
 
             JsonNode aiJson = objectMapper.readTree(cleanJson);
@@ -103,14 +109,17 @@ public class GeminiService implements AIServiceInterface {
             return new HealthAnalysisResponse(summary, risks, recs, "Gemini");
 
         } catch (Exception e) {
-            log.error("Failed to parse AI response: {}", e.getMessage());
-
-            return new HealthAnalysisResponse(
-                    "Unable to parse AI response.",
-                    "Parsing error.",
-                    "Please retry later.",
-                    "Gemini"
-            );
+            log.error("Failed to parse Gemini response: {}", aiText, e);
+            return fallback();
         }
+    }
+
+    private HealthAnalysisResponse fallback() {
+        return new HealthAnalysisResponse(
+                "Unable to process AI response.",
+                "Parsing error.",
+                "Please retry later.",
+                "Gemini"
+        );
     }
 }

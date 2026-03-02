@@ -6,11 +6,12 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import com.medmuse.medmuse_backend.dto.SymptomDto;
 import com.medmuse.medmuse_backend.dto.SymptomEntryDto;
 import com.medmuse.medmuse_backend.entity.Symptom;
 
 public interface SymptomServiceInterface {
-    List<Symptom> getAllActiveSymptoms();
+    List<SymptomDto> getAllActiveSymptoms();
     List<Symptom> getSymptomsByCategory(String category);
     List<Symptom> searchSymptoms(String searchTerm);
     SymptomEntryDto createSymptomEntry(Long userId, SymptomEntryDto entryDto);
