@@ -1,0 +1,22 @@
+package com.medmuse.medmuse_backend.config;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
+@Configuration
+public class AiConfig {
+
+    @Value("${gemini.api-key}")
+    private String apiKey;
+
+    @Bean
+    public GoogleAiGeminiChatModel geminiChatModel() {
+        return GoogleAiGeminiChatModel.builder()
+                .apiKey(apiKey)
+                .modelName("gemini-2.5-flash")
+                .temperature(0.3)
+                .build();
+    }
+}

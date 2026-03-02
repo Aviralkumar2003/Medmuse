@@ -1,11 +1,16 @@
 package com.medmuse.medmuse_backend.service.ai;
 
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.medmuse.medmuse_backend.dto.HealthAnalysisRequest;
 import com.medmuse.medmuse_backend.dto.HealthAnalysisResponse;
 import com.medmuse.medmuse_backend.dto.SymptomEntryDto;
 
+import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.ai.chat.client.ChatClient;
