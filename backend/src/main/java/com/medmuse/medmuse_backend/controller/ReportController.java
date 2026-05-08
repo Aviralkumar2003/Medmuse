@@ -148,14 +148,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDate;
 import java.util.List;
 
+import jakarta.validation.Valid;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -166,12 +165,13 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.itextpdf.text.DocumentException;
+import com.medmuse.medmuse_backend.dto.GenerateReportRequest;
 import com.medmuse.medmuse_backend.dto.ReportDto;
 import com.medmuse.medmuse_backend.dto.UserDto;
 import com.medmuse.medmuse_backend.service.DemographicsService;
@@ -220,8 +220,7 @@ public class ReportController {
     @PostMapping("/generate/custom")
     public ResponseEntity<ReportDto> generateCustomReport(
             @AuthenticationPrincipal OidcUser principal,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate)
+            @Valid @RequestBody GenerateReportRequest request)
             throws DocumentException, IOException {
 
         UserDto user = UserContext.getCurrentUser(principal, userService);
@@ -235,7 +234,18 @@ public class ReportController {
             );
         }
 
-        ReportDto report = reportService.generateReportForPeriod(user.getId(), startDate, endDate);
+        if (request.getStartDate().isAfter(request.getEndDate())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Start date must be on or before end date"
+            );
+        }
+
+        ReportDto report = reportService.generateReportForPeriod(
+                user.getId(),
+                request.getStartDate(),
+                request.getEndDate(),
+                request.getSymptomIds());
         return ResponseEntity.status(HttpStatus.CREATED).body(report);
     }
 

@@ -4,7 +4,10 @@ import { Link } from "react-router-dom";
 
 interface RecentEntry {
   entryDate: string;
+  entryTime?: string;
+  loggedAt?: string;
   symptomName: string;
+  customDescription?: string;
   severity: number;
 }
 
@@ -42,6 +45,9 @@ export const RecentEntriesCard = ({ entries, isLoading = false }: RecentEntriesC
               <div key={index} className="flex items-center justify-between">
                 <div>
                   <p className="font-ui text-foreground">{entry.symptomName}</p>
+                  {entry.customDescription && (
+                    <p className="text-sm text-foreground">{entry.customDescription}</p>
+                  )}
                   <p className="text-sm text-muted-foreground">{entry.entryDate}</p>
                 </div>
                 <div className={`text-sm font-medium ${

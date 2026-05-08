@@ -11,7 +11,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 public interface ReportServiceInterface {
-    ReportDto generateReportForPeriod(Long userId, LocalDate startDate, LocalDate endDate) throws DocumentException, IOException;   
+    ReportDto generateReportForPeriod(Long userId, LocalDate startDate, LocalDate endDate) throws DocumentException, IOException;
+    ReportDto generateReportForPeriod(Long userId, LocalDate startDate, LocalDate endDate, List<Long> symptomIds)
+            throws DocumentException, IOException;
     // List<ReportDto> getUserReports(Long userId);
     // Page<ReportDto> getUserReports(Long userId, Pageable pageable);
     // ReportDto getReportById(Long userId, Long reportId);

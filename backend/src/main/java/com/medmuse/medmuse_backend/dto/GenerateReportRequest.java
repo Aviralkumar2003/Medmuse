@@ -3,6 +3,7 @@ package com.medmuse.medmuse_backend.dto;
 import java.time.LocalDate;
 import java.util.List;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,11 +11,12 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class HealthAnalysisRequest {
-    private Long userId;
+public class GenerateReportRequest {
+    @NotNull
     private LocalDate startDate;
+
+    @NotNull
     private LocalDate endDate;
-    private List<SymptomEntryDto> symptomEntries;
-    private List<String> selectedSymptomNames;
-    private UserDemographicsDto demographics;
+
+    private List<Long> symptomIds;
 }

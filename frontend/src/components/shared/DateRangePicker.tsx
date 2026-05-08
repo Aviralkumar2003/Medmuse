@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import Calendar from '@/components/ui/calendar';
+import { formatDisplayDate, formatLocalDate, parseLocalDate } from '@/lib/date-utils';
 
 interface DateRangePickerProps {
   startDate: string;
@@ -27,8 +28,8 @@ export function DateRangePicker({
   const startCalendarRef = useRef<HTMLDivElement>(null);
   const endCalendarRef = useRef<HTMLDivElement>(null);
 
-  const startDateObj = new Date(startDate);
-  const endDateObj = new Date(endDate);
+  const startDateObj = parseLocalDate(startDate);
+  const endDateObj = parseLocalDate(endDate);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -55,7 +56,7 @@ export function DateRangePicker({
         <input
           readOnly
           id="startDate"
-          value={startDateObj.toLocaleDateString('en-US')}
+          value={formatDisplayDate(startDate)}
           onClick={() => setShowStartCalendar(v => !v)}
           className="pl-10 font-body cursor-pointer w-full border border-gray-300 rounded-md h-10"
         />
@@ -66,7 +67,7 @@ export function DateRangePicker({
               selected={startDateObj}
               onSelect={(d) => {
                 if (d && d <= endDateObj) {
-                  onStartDateChange(d.toISOString().split('T')[0]);
+                  onStartDateChange(formatLocalDate(d));
                   setShowStartCalendar(false);
                 }
               }}
@@ -83,7 +84,7 @@ export function DateRangePicker({
         <input
           readOnly
           id="endDate"
-          value={endDateObj.toLocaleDateString('en-US')}
+          value={formatDisplayDate(endDate)}
           onClick={() => setShowEndCalendar(v => !v)}
           className="pl-10 font-body cursor-pointer w-full border border-gray-300 rounded-md h-10"
         />
@@ -94,7 +95,7 @@ export function DateRangePicker({
               selected={endDateObj}
               onSelect={(d) => {
                 if (d && d >= startDateObj) {
-                  onEndDateChange(d.toISOString().split('T')[0]);
+                  onEndDateChange(formatLocalDate(d));
                   setShowEndCalendar(false);
                 }
               }}

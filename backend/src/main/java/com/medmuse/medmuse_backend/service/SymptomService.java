@@ -1,5 +1,8 @@
 package com.medmuse.medmuse_backend.service;
+
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -9,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import com.medmuse.medmuse_backend.dto.SymptomDto;
 import com.medmuse.medmuse_backend.dto.SymptomEntryDto;
@@ -60,15 +64,26 @@ public class SymptomService implements SymptomServiceInterface {
     public SymptomEntryDto createSymptomEntry(Long userId, SymptomEntryDto entryDto) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+
+        Symptom symptom = resolveSymptom(entryDto.getSymptomId());
+        String customDescription = normalizeCustomDescription(entryDto.getCustomDescription());
+
+        if (symptom == null && !StringUtils.hasText(customDescription)) {
+            throw new RuntimeException("Either symptomId or customDescription is required");
+        }
         
-        Symptom symptom = symptomRepository.findById(entryDto.getSymptomId())
-            .orElseThrow(() -> new RuntimeException("Symptom not found"));
-        
-        SymptomEntry entry = new SymptomEntry(user, symptom, entryDto.getSeverity(), 
-                                            entryDto.getNotes(), entryDto.getEntryDate());
+        SymptomEntry entry = new SymptomEntry(
+            user,
+            symptom,
+            customDescription,
+            resolveSeverity(entryDto.getSeverity()),
+            entryDto.getNotes(),
+            resolveEntryDate(entryDto.getEntryDate()),
+            resolveEntryTime(entryDto.getEntryTime())
+        );
         entry = symptomEntryRepository.save(entry);
         
-        return modelMapper.map(entry, SymptomEntryDto.class);
+        return toDto(entry);
     }
     
     @Override
@@ -80,15 +95,15 @@ public class SymptomService implements SymptomServiceInterface {
     
     @Override
     public Page<SymptomEntryDto> getUserSymptomEntries(Long userId, Pageable pageable) {
-        return symptomEntryRepository.findByUserIdOrderByEntryDateDesc(userId, pageable)
-            .map(entry -> modelMapper.map(entry, SymptomEntryDto.class));
+        return symptomEntryRepository.findByUserIdOrderByEntryDateDescEntryTimeDesc(userId, pageable)
+            .map(this::toDto);
     }
     
     @Override
     public List<SymptomEntryDto> getUserSymptomEntriesByDateRange(Long userId, LocalDate startDate, LocalDate endDate) {
-        return symptomEntryRepository.findByUserIdAndEntryDateBetweenOrderByEntryDateDesc(userId, startDate, endDate)
+        return symptomEntryRepository.findByUserIdAndEntryDateBetweenOrderByEntryDateDescEntryTimeDesc(userId, startDate, endDate)
             .stream()
-            .map(entry -> modelMapper.map(entry, SymptomEntryDto.class))
+            .map(this::toDto)
             .collect(Collectors.toList());
     }
     
@@ -107,9 +122,25 @@ public class SymptomService implements SymptomServiceInterface {
         if (updateDto.getNotes() != null) {
             entry.setNotes(updateDto.getNotes());
         }
+        if (updateDto.getEntryDate() != null) {
+            entry.setEntryDate(updateDto.getEntryDate());
+        }
+        if (updateDto.getEntryTime() != null) {
+            entry.setEntryTime(resolveEntryTime(updateDto.getEntryTime()));
+        }
+        if (updateDto.getSymptomId() != null) {
+            Symptom updatedSymptom = resolveSymptom(updateDto.getSymptomId());
+            if (entry.getSymptom() == null || !updateDto.getSymptomId().equals(entry.getSymptom().getId())) {
+                entry.setSymptom(updatedSymptom);
+                entry.setCustomDescription(null);
+            }
+        } else if (StringUtils.hasText(updateDto.getCustomDescription())) {
+            entry.setSymptom(null);
+            entry.setCustomDescription(normalizeCustomDescription(updateDto.getCustomDescription()));
+        }
         
         entry = symptomEntryRepository.save(entry);
-        return modelMapper.map(entry, SymptomEntryDto.class);
+        return toDto(entry);
     }
     
     @Override
@@ -122,5 +153,56 @@ public class SymptomService implements SymptomServiceInterface {
         }
         
         symptomEntryRepository.delete(entry);
+    }
+
+    private SymptomEntryDto toDto(SymptomEntry entry) {
+        LocalDateTime loggedAt = null;
+        if (entry.getEntryDate() != null && entry.getEntryTime() != null) {
+            loggedAt = LocalDateTime.of(entry.getEntryDate(), entry.getEntryTime());
+        }
+
+        return new SymptomEntryDto(
+            entry.getId(),
+            entry.getSymptom() != null ? entry.getSymptom().getId() : null,
+            entry.getSymptom() != null ? entry.getSymptom().getName() : "Custom symptom",
+            entry.getSymptom() != null ? entry.getSymptom().getCategory() : "Custom",
+            entry.getCustomDescription(),
+            entry.getSeverity(),
+            entry.getNotes(),
+            entry.getEntryDate(),
+            entry.getEntryTime(),
+            loggedAt,
+            entry.getCreatedAt()
+        );
+    }
+
+    private LocalDate resolveEntryDate(LocalDate entryDate) {
+        return entryDate != null ? entryDate : LocalDate.now();
+    }
+
+    private LocalTime resolveEntryTime(LocalTime entryTime) {
+        LocalTime resolvedTime = entryTime != null ? entryTime : LocalTime.now();
+        return resolvedTime.withSecond(0).withNano(0);
+    }
+
+    private Integer resolveSeverity(Integer severity) {
+        return severity != null ? severity : 5;
+    }
+
+    private Symptom resolveSymptom(Long symptomId) {
+        if (symptomId == null) {
+            return null;
+        }
+
+        return symptomRepository.findById(symptomId)
+            .orElseThrow(() -> new RuntimeException("Symptom not found"));
+    }
+
+    private String normalizeCustomDescription(String customDescription) {
+        if (!StringUtils.hasText(customDescription)) {
+            return null;
+        }
+
+        return customDescription.trim();
     }
 }

@@ -6,11 +6,15 @@ import { Link } from "react-router-dom"
 import { StatsCard } from "@/components/dashboard/StatsCard"
 import { WelcomeSection } from "@/components/dashboard/WelcomeSection"
 import { QuickActionCard } from "@/components/dashboard/QuickActionCard"
-import { RecentEntriesCard } from "@/components/dashboard/RecentEntriesCard"
 import { useAppDispatch, useAppSelector } from "../hooks/redux"
 import { getUserSymptomEntries } from "../store/slices/symptomEntrySlice"
 import { generateWeeklyReport } from "../store/slices/reportSlice"
 import { useToast } from "../hooks/use-toast"
+import {
+  formatDateInputValue,
+  formatEntryDateLabel,
+  formatEntryTimeLabel,
+} from "@/lib/symptom-entry-utils"
 
 export default function Dashboard() {
   const dispatch = useAppDispatch()
@@ -18,6 +22,7 @@ export default function Dashboard() {
   const { user } = useAppSelector((state) => state.auth)
   const { entries, isLoading: entriesLoading } = useAppSelector((state) => state.symptomEntries)
   const { isGenerating: reportGenerating } = useAppSelector((state) => state.reports)
+  const todayEntryDate = formatDateInputValue(new Date())
 
   useEffect(() => {
     // Fetch recent entries when component mounts
@@ -49,10 +54,6 @@ export default function Dashboard() {
     }
   ]
 
-  const handleQuickLogSymptoms = () => {
-    // This will navigate to log symptoms page
-  }
-
   const handleGenerateWeeklyReport = async () => {
     try {
       await dispatch(generateWeeklyReport()).unwrap()
@@ -60,10 +61,10 @@ export default function Dashboard() {
         title: "Success",
         description: "Weekly report generated successfully!",
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error || "Failed to generate report",
+        description: error instanceof Error ? error.message : "Failed to generate report",
         variant: "destructive",
       })
     }
@@ -119,8 +120,13 @@ export default function Dashboard() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-sm font-ui font-medium text-foreground">
-                            {new Date(entry.entryDate).toLocaleDateString()}
+                            {formatEntryDateLabel(entry.entryDate, entry.entryTime, entry.loggedAt)}
                           </span>
+                          {formatEntryTimeLabel(entry.entryDate, entry.entryTime, entry.loggedAt) && (
+                            <span className="text-xs text-muted-foreground">
+                              {formatEntryTimeLabel(entry.entryDate, entry.entryTime, entry.loggedAt)}
+                            </span>
+                          )}
                           <span className="text-xs text-muted-foreground">
                             {entry.symptomCategory}
                           </span>
@@ -128,6 +134,11 @@ export default function Dashboard() {
                         <p className="text-sm font-body text-muted-foreground">
                           {entry.symptomName}
                         </p>
+                        {entry.customDescription && (
+                          <p className="text-sm font-ui text-foreground mt-1">
+                            {entry.customDescription}
+                          </p>
+                        )}
                         {entry.notes && (
                           <p className="text-xs font-body text-muted-foreground mt-1 truncate">
                             {entry.notes}
@@ -219,7 +230,7 @@ export default function Dashboard() {
           <CardContent>
             <div className="text-center py-8">
               <p className="text-muted-foreground font-body mb-6">
-                {entries.some(entry => entry.entryDate === new Date().toISOString().split('T')[0]) 
+                {entries.some(entry => entry.entryDate === todayEntryDate) 
                   ? "You've logged symptoms for today. Great job staying consistent!"
                   : "You haven't logged any symptoms for today yet."
                 }
@@ -227,7 +238,7 @@ export default function Dashboard() {
               <Button variant="medical" size="lg" asChild>
                 <Link to="/log-symptoms">
                   <Plus className="h-5 w-5 mr-2" />
-                  {entries.some(entry => entry.entryDate === new Date().toISOString().split('T')[0])
+                  {entries.some(entry => entry.entryDate === todayEntryDate)
                     ? "Add More Symptoms"
                     : "Start Today's Log"
                   }

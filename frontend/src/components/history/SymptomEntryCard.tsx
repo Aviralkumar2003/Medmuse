@@ -1,11 +1,18 @@
 import { Calendar, TrendingDown, TrendingUp, Minus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  formatEntryDateLabel,
+  formatEntryTimeLabel,
+} from "@/lib/symptom-entry-utils";
 
 interface SymptomEntry {
   id: string | number;
   entryDate: string;
+  entryTime?: string;
+  loggedAt?: string;
   symptomName: string;
   symptomCategory: string;
+  customDescription?: string;
   severity: number;
   notes?: string;
   previousSeverity?: number;
@@ -38,12 +45,15 @@ export const SymptomEntryCard = ({ entry }: SymptomEntryCardProps) => {
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Calendar className="h-4 w-4" />
                 <span className="font-ui">
-                  {new Date(entry.entryDate).toLocaleDateString('en-US', {
+                  {formatEntryDateLabel(entry.entryDate, entry.entryTime, entry.loggedAt, {
                     weekday: 'short',
                     month: 'short',
                     day: 'numeric'
                   })}
                 </span>
+                {formatEntryTimeLabel(entry.entryDate, entry.entryTime, entry.loggedAt) && (
+                  <span>{formatEntryTimeLabel(entry.entryDate, entry.entryTime, entry.loggedAt)}</span>
+                )}
               </div>
             </div>
             
@@ -58,6 +68,12 @@ export const SymptomEntryCard = ({ entry }: SymptomEntryCardProps) => {
               </div>
             </div>
             
+            {entry.customDescription && (
+              <p className="mb-2 text-sm font-ui text-foreground">
+                {entry.customDescription}
+              </p>
+            )}
+
             {entry.notes && (
               <p className="text-sm text-muted-foreground font-body">{entry.notes}</p>
             )}

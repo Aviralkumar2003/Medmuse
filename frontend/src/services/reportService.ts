@@ -37,6 +37,7 @@ export interface GetReportsParams {
 export interface CustomReportParams {
   startDate: string; // YYYY-MM-DD format
   endDate: string;   // YYYY-MM-DD format
+  symptomIds?: number[];
 }
 
 /**
@@ -67,11 +68,11 @@ export const reportService = {
 
   // Generate custom date range report
   generateCustomReport: async (params: CustomReportParams): Promise<Report> => {
-    // Ensure dates are in YYYY-MM-DD format
-    const formattedStartDate = new Date(params.startDate).toISOString().split('T')[0];
-    const formattedEndDate = new Date(params.endDate).toISOString().split('T')[0];
-
-    const response = await api.post(`/api/reports/generate/custom?startDate=${formattedStartDate}&endDate=${formattedEndDate}`);
+    const response = await api.post('/api/reports/generate/custom', {
+      startDate: params.startDate,
+      endDate: params.endDate,
+      symptomIds: params.symptomIds ?? [],
+    });
     return mapReportDtoToReport(response.data);
   },
 

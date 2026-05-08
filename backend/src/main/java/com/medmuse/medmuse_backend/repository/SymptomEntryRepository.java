@@ -16,10 +16,24 @@ import com.medmuse.medmuse_backend.entity.SymptomEntry;
 @Repository
 public interface SymptomEntryRepository extends JpaRepository<SymptomEntry, Long> {
     
-    Page<SymptomEntry> findByUserIdOrderByEntryDateDesc(Long userId, Pageable pageable);
+    Page<SymptomEntry> findByUserIdOrderByEntryDateDescEntryTimeDesc(Long userId, Pageable pageable);
     
-    List<SymptomEntry> findByUserIdAndEntryDateBetweenOrderByEntryDateDesc(
+    List<SymptomEntry> findByUserIdAndEntryDateBetweenOrderByEntryDateDescEntryTimeDesc(
         Long userId, LocalDate startDate, LocalDate endDate);
+
+    @Query("""
+        SELECT se
+        FROM SymptomEntry se
+        WHERE se.user.id = :userId
+          AND se.entryDate BETWEEN :startDate AND :endDate
+          AND se.symptom.id IN :symptomIds
+        ORDER BY se.entryDate DESC, se.entryTime DESC
+        """)
+    List<SymptomEntry> findByUserIdAndEntryDateBetweenAndSymptomIdInOrderByEntryDateDescEntryTimeDesc(
+        @Param("userId") Long userId,
+        @Param("startDate") LocalDate startDate,
+        @Param("endDate") LocalDate endDate,
+        @Param("symptomIds") List<Long> symptomIds);
     
     @Query("SELECT se FROM SymptomEntry se WHERE se.user.id = :userId AND se.entryDate >= :startDate")
     List<SymptomEntry> findRecentEntriesForUser(@Param("userId") Long userId, @Param("startDate") LocalDate startDate);

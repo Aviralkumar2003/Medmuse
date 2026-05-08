@@ -1,10 +1,12 @@
 import api from './api';
 
 export interface CreateSymptomEntryRequest {
-  symptomId: number;
+  symptomId?: number | null;
+  customDescription?: string;
   severity: number;
   notes?: string;
   entryDate: string; // YYYY-MM-DD format
+  entryTime: string; // HH:mm format
 }
 
 export interface CreateSymptomEntriesRequest {
@@ -12,18 +14,23 @@ export interface CreateSymptomEntriesRequest {
 }
 
 export interface UpdateSymptomEntryRequest {
-  symptomId: number;
+  symptomId?: number | null;
+  customDescription?: string;
   severity: number;
   notes?: string;
   entryDate: string; // YYYY-MM-DD format
+  entryTime: string; // HH:mm format
 }
 
 export interface SymptomEntry {
   id: number;
-  symptomId: number;
+  symptomId?: number | null;
+  customDescription?: string;
   severity: number;
   notes?: string;
   entryDate: string;
+  entryTime: string;
+  loggedAt: string;
   symptomName: string;
   symptomCategory: string;
   createdAt: string;

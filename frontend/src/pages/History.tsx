@@ -6,8 +6,11 @@ import { getUserSymptomEntries, clearError } from "@/store/slices/symptomEntrySl
 import { useToast } from "@/hooks/use-toast"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { SearchFilters } from "@/components/history/SearchFilters"
-import { SymptomEntryCard } from "@/components/history/SymptomEntryCard"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import {
+  formatEntryDateLabel,
+  formatEntryTimeLabel,
+} from "@/lib/symptom-entry-utils"
 
 export default function History() {
   const dispatch = useAppDispatch()
@@ -64,6 +67,7 @@ export default function History() {
 
   const filteredEntries = entries.filter(entry => 
     entry.symptomName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (entry.customDescription && entry.customDescription.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (entry.notes && entry.notes.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
@@ -105,12 +109,17 @@ export default function History() {
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Calendar className="h-4 w-4" />
                             <span className="font-ui">
-                              {new Date(entry.entryDate).toLocaleDateString('en-US', {
+                              {formatEntryDateLabel(entry.entryDate, entry.entryTime, entry.loggedAt, {
                                 weekday: 'short',
                                 month: 'short', 
                                 day: 'numeric'
                               })}
                             </span>
+                            {formatEntryTimeLabel(entry.entryDate, entry.entryTime, entry.loggedAt) && (
+                              <span>
+                                {formatEntryTimeLabel(entry.entryDate, entry.entryTime, entry.loggedAt)}
+                              </span>
+                            )}
                           </div>
                         </div>
                         
@@ -124,6 +133,12 @@ export default function History() {
                             </span>
                           </div>
                         </div>
+
+                        {entry.customDescription && (
+                          <p className="mb-2 text-sm font-ui text-foreground">
+                            {entry.customDescription}
+                          </p>
+                        )}
 
                         {entry.notes && (
                           <p className="text-sm font-body text-muted-foreground">
@@ -230,7 +245,12 @@ export default function History() {
                   </div>
                   <div>
                     <div className="text-2xl font-ui font-bold text-foreground">
-                      {[...new Set(filteredEntries.map(entry => entry.symptomName))].length}
+                      {[...new Set(
+                        filteredEntries.map(entry =>
+                          entry.customDescription?.trim().toLowerCase() ||
+                          entry.symptomName.toLowerCase()
+                        )
+                      )].length}
                     </div>
                     <div className="text-sm font-body text-muted-foreground">
                       Unique Symptoms
